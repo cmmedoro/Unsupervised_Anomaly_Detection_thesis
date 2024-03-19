@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import MinMaxScaler
 
 def impute_nulls(dataframe):
     # Sort the dataframe
@@ -69,12 +70,53 @@ def impute_missing_dates(dataframe):
   Take first and last timestamp available. Create a new index starting from these two values, making sure that the index is 
   sampled with 1 hour jump. Use ffill to impute the missing values for the dates newly created.
   """
-  dataframe= dataframe.set_index(['timestamp'])
+  dataframe = dataframe.set_index(['timestamp'])
   start_ts = min(dataframe.index)
   end_ts = max(dataframe.index)
   new_index = pd.date_range(start_ts, end=end_ts, freq="1H")
   dfs_dict = {}
   for building_id, gdf in dataframe.groupby("building_id"):
       dfs_dict[building_id] = gdf.reindex(new_index, method='ffill')
-  dataframe = pd.concat(dfs_dict.values())
+  return dfs_dict
+
+def split(dataframe, buildings_id):
+  dfs_dict_1 = {}
+  for building_id, gdf in dataframe.groupby("building_id"):
+      if building_id in buildings_id:
+        dfs_dict_1[building_id] = gdf
+  return dfs_dict_1
+
+def train_val_split(dataframe):
+  building_ids_train = np.unique(dataframe.building_id)
+  building_ids_train =[building_id for building_id in building_ids_train if building_id%5<4]
+
+  dfs_dict_train = split(dataframe, building_ids_train)
+
+  building_ids_val = np.unique(dataframe.building_id)
+  building_ids_val =[building_id for building_id in building_ids_val if building_id%5==4]
+
+  dfs_dict_val = split(dataframe, building_ids_val)
+
+  return dfs_dict_train, dfs_dict_val
+
+# sequences divided per building
+def split_sequences(dataframe, n_steps):
+  scaler = MinMaxScaler(feature_range=(0,1))
+  X, y = list(), list()
+  for building_id, gdf in dataframe.groupby("building_id"):
+    gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']]) #,'weekday_x', 'weekday_y'
+    building_data = np.array(gdf[['meter_reading']]).astype(float)#can choose to add additional features: 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday'
+    for i in range(len(building_data)):
+      # find the end of this sequence
+      end_ix = i + n_steps
+      # check if we are beyond the dataset length for this building
+      if end_ix > len(building_data)-1:
+        break
+      # gather input and output parts of the pattern
+      seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
+      X.append(seq_x)
+      y.append(seq_y)
+  return np.array(X), np.array(y)
+
+  
 
