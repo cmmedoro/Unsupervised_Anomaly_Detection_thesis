@@ -104,8 +104,8 @@ def split_sequences(dataframe, n_steps):
   scaler = MinMaxScaler(feature_range=(0,1))
   X, y = list(), list()
   for building_id, gdf in dataframe.groupby("building_id"):
-    gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']]) #,'weekday_x', 'weekday_y'
-    building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday']]).astype(float)#can choose to add additional features: 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday'
+    gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']]) #,'weekday_x', 'weekday_y'
+    building_data = np.array(gdf[['meter_reading']]).astype(float)#can choose to add additional features: 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday'
     for i in range(len(building_data)):
       # find the end of this sequence
       end_ix = i + n_steps
