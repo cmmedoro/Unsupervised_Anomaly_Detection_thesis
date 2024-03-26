@@ -99,6 +99,24 @@ def train_val_split(dataframe):
 
   return dfs_dict_train, dfs_dict_val
 
+
+def train_val_test_split(dataframe):
+  building_ids_temp = np.unique(dataframe.building_id)
+  building_ids_temp =[building_id for building_id in building_ids_temp if building_id%5<4]
+
+  building_ids_train = [building_id for building_id in building_ids_temp if building_id <= 1240]
+  building_ids_val = [building_id for building_id in building_ids_temp if building_id > 1240]
+
+  dfs_dict_train = split(dataframe, building_ids_train)
+  dfs_dict_val = split(dataframe, building_ids_val)
+
+  building_ids_test = np.unique(dataframe.building_id)
+  building_ids_test =[building_id for building_id in building_ids_test if building_id%5==4]
+
+  dfs_dict_test = split(dataframe, building_ids_test)
+
+  return dfs_dict_train, dfs_dict_val, dfs_dict_test
+
 # sequences divided per building
 def split_sequences(dataframe, n_steps):
   scaler = MinMaxScaler(feature_range=(0,1))
