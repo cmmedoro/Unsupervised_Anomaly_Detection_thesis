@@ -136,5 +136,35 @@ def split_sequences(dataframe, n_steps):
       y.append(seq_y)
   return np.array(X), np.array(y)
 
+
+
+# Generated training sequences to use in the model.
+def create_train_eval_sequences(dataframe, time_steps):
+  scaler = MinMaxScaler(feature_range=(0,1))
+  output = []
+  output2=[]
+  for building_id, gdf in dataframe.groupby("building_id"):
+      gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
+      building_data = np.array(gdf[['meter_reading']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
+      for i in range(len(building_data) - time_steps + 1):
+        output.append(building_data[i : (i + time_steps),:])
+        output2.append(building_data[i : (i + time_steps),0])
+  return np.stack(output), np.stack(output2)
+
+# Generated testing sequences for use in the model.
+def create_test_sequences(dataframe, time_steps):
+    scaler = MinMaxScaler(feature_range=(0,1))
+    output = []
+    output2 = []
+    for building_id, gdf in dataframe.groupby("building_id"):
+       gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
+       building_data = np.array(gdf[['meter_reading']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
+       for i in range(0, len(building_data) - time_steps + 1, time_steps):
+        end_ix = i + time_steps
+        #if end_ix > len(gdf):
+          #break
+        output.append(building_data[i : end_ix,:])
+        output2.append(building_data[i : end_ix,0])
+    return np.stack(output), np.stack(output2)
   
 
