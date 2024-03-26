@@ -147,6 +147,11 @@ def create_train_eval_sequences(dataframe, time_steps):
       gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
       building_data = np.array(gdf[['meter_reading']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
       for i in range(len(building_data) - time_steps + 1):
+        # find the end of this sequence
+        end_ix = i + time_steps
+        # check if we are beyond the dataset length for this building
+        if end_ix > len(building_data)-1:
+          break
         output.append(building_data[i : (i + time_steps),:])
         output2.append(building_data[i : (i + time_steps),0])
   return np.stack(output), np.stack(output2)
