@@ -79,10 +79,16 @@ def evaluate(model, val_loader, n):
     outputs = [model.validation_step(to_device(batch,device), n) for [batch] in val_loader]
     return model.validation_epoch_end(outputs)
 
-def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam):
+def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): #opt1 = None, opt2 = None, resume_training = False
     history = []
+    # Changing code to allow resume training from checkpoint
+    #if resume_training == False:
+      # The following two lines were the original ones in the code
     optimizer1 = opt_func(list(model.encoder.parameters())+list(model.decoder1.parameters()))
     optimizer2 = opt_func(list(model.encoder.parameters())+list(model.decoder2.parameters()))
+    #else:
+     #  optimizer1 = opt1
+      # optimizer2 = opt2
     for epoch in range(epochs):
         for [batch] in train_loader:
             batch=to_device(batch,device)
@@ -104,14 +110,79 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         result = evaluate(model, val_loader, epoch+1)
         model.epoch_end(epoch, result)
         history.append(result)
-    return history
+    return history#, optimizer1, optimizer2
     
 def testing(model, test_loader, alpha=.5, beta=.5):
+    # QUI: farsi restituire anche w1 e w2 per fare il confronto con i valori originali
+    # Attenzione: w1 e w2 sono calcolati per batch, quindi bisogna poi metterli tutti insieme
     results=[]
     with torch.no_grad():
-        for [batch] in test_loader:
+        for [batch] in test_loader: #N.B.: batch, w1, w2 sono tensori torch.tensor
             batch=to_device(batch,device)
             w1=model.decoder1(model.encoder(batch))
             w2=model.decoder2(model.encoder(w1))
             results.append(alpha*torch.mean((batch-w1)**2,axis=1)+beta*torch.mean((batch-w2)**2,axis=1))
     return results
+
+def testing_prova(model, test_loader, alpha=.5, beta=.5):
+    # QUI: farsi restituire anche w1 e w2 per fare il confronto con i valori originali
+    # Attenzione: w1 e w2 sono calcolati per batch, quindi bisogna poi metterli tutti insieme
+    # Problema: io sto passando il test_loader come sliding windows sovrapposte ---> perchè così funziona usad
+    # Se però voglio visualizzare la ricostruzione, così non funziona più
+    results=[]
+    tensors_w1 = []
+    tensors_w2 = []
+    with torch.no_grad():
+        for [batch] in test_loader:
+            batch=to_device(batch,device)
+            w1=model.decoder1(model.encoder(batch))
+            w2=model.decoder2(model.encoder(w1))
+            tensors_w1.append(w1)
+            tensors_w2.append(w2)
+            results.append(alpha*torch.mean((batch-w1)**2,axis=1)+beta*torch.mean((batch-w2)**2,axis=1))
+    return results, tensors_w1, tensors_w2
+
+"""
+Codice per ricominciare il training dal checkpoint
+def load_ckp(checkpoint_fpath, model, optimizer):
+    checkpoint = torch.load(checkpoint_fpath)
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    return model, optimizer, checkpoint['epoch']
+
+Load the model like this:
+  model = MyModel(*args, **kwargs)
+  optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+  ckp_path = "path/to/checkpoint/checkpoint.pt"
+  model, optimizer, start_epoch = load_ckp(ckp_path, model, optimizer)
+
+Then pass the model to the training loop, it should resume from where it ended
+
+
+
+FROM PYTORCH documentation
+Load several info
+# Additional information
+EPOCH = 5
+PATH = "model.pt"
+LOSS = 0.4
+
+torch.save({
+            'epoch': EPOCH,
+            'model_state_dict': net.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': LOSS,
+            }, PATH)
+
+Load general checkpoint: firstly you need to instantiate model and optimizer, then load the state dictionary
+model = Net()
+optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+
+checkpoint = torch.load(PATH)
+model.load_state_dict(checkpoint['model_state_dict'])
+optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+epoch = checkpoint['epoch']
+loss = checkpoint['loss']
+#Resume training as follows (similarly if you want to resume evaluation):
+model.train() #or model.eval()
+"""
