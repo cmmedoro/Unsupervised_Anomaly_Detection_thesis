@@ -196,7 +196,7 @@ def apply_reconstruction(dataframe, n_timeseries):
   # Take the entire dataframe
   squeezed_df = np.squeeze(dataframe)
   # Reshape it: ex. train (162, 8713, 72) ---> 162 = number of timeseries in the dataframe
-  reshaped = np.reshape(squeezed_df, (n_timeseries, 8713, 72))
+  reshaped = np.reshape(squeezed_df, (n_timeseries, 8712, 72)) #8713
   reconstruction = []
   i = 0
   for timeseries in reshaped:
