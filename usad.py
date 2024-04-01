@@ -13,7 +13,7 @@ class Encoder(nn.Module):
     self.relu = nn.ReLU(True)
         
   def forward(self, w):
-    out = self.linear1(w)
+    out = self.linear1(w) #w
     out = self.relu(out)
     out = self.linear2(out)
     out = self.relu(out)
@@ -150,6 +150,8 @@ def reconstruction(model, test_loader):
           w1=model.decoder1(model.encoder(batch))
           w2=model.decoder2(model.encoder(w1))
   # Restituisci solo le ricostruzioni da parte dei due autoencoder
+  # Per determinare le anomalie: come facevamo con le baseline, da capire solo come mettere insieme i risultati del primo e del secondo decoder
+  # Forse anche qui possiamo calcolare le loss, e almeno per il momento farne una media pesata... no?
   return w1, w2
 """
 Codice per ricominciare il training dal checkpoint

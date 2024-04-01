@@ -4,6 +4,8 @@ import numpy as np
 import datetime as dt
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.preprocessing import MinMaxScaler
+import torch.nn.functional as F
+import torch
 
 def impute_nulls(dataframe):
     # Sort the dataframe
@@ -144,14 +146,14 @@ def create_train_eval_sequences(dataframe, time_steps):
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
-      building_data = np.array(gdf[['meter_reading']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
+      gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']])
+      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
       for i in range(len(building_data) - time_steps + 1):
         # find the end of this sequence
         end_ix = i + time_steps
         # check if we are beyond the dataset length for this building
-        #if end_ix > len(building_data)-1:
-         # break
+        if end_ix > len(building_data)-1:
+          break
         output.append(building_data[i : (i + time_steps),:])
         output2.append(building_data[i : (i + time_steps),0])
   return np.stack(output), np.stack(output2)
@@ -209,4 +211,17 @@ def apply_reconstruction(dataframe, n_timeseries):
   fr = np.reshape(final_reconstruction, (n_timeseries*8784, 1))
   return fr
   
+def padding_w(w, batch_size):
+  # This function needs to be used on the outputs of the decoders: the last "batch" is not going to be full of the batch_size elements 
+  # characterizing a single batch, therefore a proper padding needs to be ensured. Moreover, with this function, we also transform
+  # the padded output into a suitable format to perform the following operations to obtain the reconstructed input
+  last = w[-1]
+  padded_last = F.pad(last, (0, 0, 0, batch_size-w.size()[0]))
+  new_lista = w[:-1]
+  new_lista.append(padded_last)
+  res_w = torch.cat(new_lista, dim=0)
+  index = batch_size-w.size()[0]
+  original_rec = res_w[:-index]
+  origin_rec = original_rec.detach().cpu().numpy()
 
+  return origin_rec

@@ -3,6 +3,8 @@ import numpy as np
 import datetime as dt
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.preprocessing import MinMaxScaler
+import torch.nn.functional as F
+import torch
 
 # Define a function to revert the sliding window application
 def reconstruction_windows(timeseries):
@@ -40,4 +42,17 @@ def apply_reconstruction(dataframe, n_timeseries):
   fr = np.reshape(final_reconstruction, (n_timeseries*8784, 1))
   return fr
   
+def padding_w(w, batch_size):
+  # This function needs to be used on the outputs of the decoders: the last "batch" is not going to be full of the batch_size elements 
+  # characterizing a single batch, therefore a proper padding needs to be ensured. Moreover, with this function, we also transform
+  # the padded output into a suitable format to perform the following operations to obtain the reconstructed input
+  last = w[-1]
+  padded_last = F.pad(last, (0, 0, 0, batch_size-w.size()[0]))
+  new_lista = w[:-1]
+  new_lista.append(padded_last)
+  res_w = torch.cat(new_lista, dim=0)
+  index = batch_size-w.size()[0]
+  original_rec = res_w[:-index]
+  origin_rec = original_rec.detach().cpu().numpy()
 
+  return origin_rec
