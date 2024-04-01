@@ -32,18 +32,26 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
   def __init__(self, latent_size, out_size):
     super().__init__()
+    self.conv1 = nn.ConvTranspose1d(8, 16, 7, 2, 3)
+    self.conv2 = nn.ConvTranspose1d(16, 16, 7, 2, 3)
+    self.conv3 = nn.ConvTranspose1d(16, 32, 7, 2, 3)
+    self.conv4 = nn.ConvTranspose1d(32, 1, 7, 2, 3)
+    """
     self.linear1 = nn.Linear(latent_size, int(out_size/4))
     self.linear2 = nn.Linear(int(out_size/4), int(out_size/2))
     self.linear3 = nn.Linear(int(out_size/2), out_size)
+    """
     self.relu = nn.ReLU(True)
     self.sigmoid = nn.Sigmoid()
         
   def forward(self, z):
-    out = self.linear1(z)
+    out = self.conv1(z)
     out = self.relu(out)
-    out = self.linear2(out)
+    out = self.conv2(out)
     out = self.relu(out)
-    out = self.linear3(out)
+    out = self.conv3(out)
+    out = self.relu(out)
+    out = self.conv4(out) 
     w = self.sigmoid(out)
     return w
     
