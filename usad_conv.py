@@ -19,10 +19,11 @@ class Encoder(nn.Module):
     
     """
     self.relu = nn.ReLU(True)
+    self.dropout = nn.Dropout(p=0.2)
   def forward(self, w):
     out = self.conv1(w) #w
     out = self.relu(out)
-    # Dropout 0.2
+    out = self.dropout(out)
     out = self.conv2(out)
     out = self.relu(out)
     out = self.conv3(out)
@@ -42,6 +43,7 @@ class Decoder(nn.Module):
     self.linear3 = nn.Linear(int(out_size/2), out_size)
     """
     self.relu = nn.ReLU(True)
+    self.dropout = nn.Dropout(p=0.2)
     self.sigmoid = nn.Sigmoid()
         
   def forward(self, z):
@@ -49,6 +51,7 @@ class Decoder(nn.Module):
     out = self.relu(out)
     out = self.conv2(out)
     out = self.relu(out)
+    out = self.dropout(out)
     out = self.conv3(out)
     out = self.relu(out)
     out = self.conv4(out) 
