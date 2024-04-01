@@ -64,6 +64,16 @@ class UsadModel(nn.Module):
         loss1 = 1/n*torch.mean((batch-w1)**2)+(1-1/n)*torch.mean((batch-w3)**2)
         loss2 = 1/n*torch.mean((batch-w2)**2)-(1-1/n)*torch.mean((batch-w3)**2)
     return {'val_loss1': loss1, 'val_loss2': loss2}
+  
+  def validation_step_v2(self, batch, n):
+    with torch.no_grad():
+        z = self.encoder(batch)
+        w1 = self.decoder1(z)
+        w2 = self.decoder2(z)
+        w3 = self.decoder2(self.encoder(w1))
+        loss1 = 1/n*torch.mean((batch-w1)**2)+(1-1/n)*torch.mean((batch-w3)**2)
+        loss2 = 1/n*torch.mean((batch-w2)**2)-(1-1/n)*torch.mean((batch-w3)**2)
+    return {'val_loss1': loss1, 'val_loss2': loss2}, w1, w3
         
   def validation_epoch_end(self, outputs):
     batch_losses1 = [x['val_loss1'] for x in outputs]
@@ -78,6 +88,15 @@ class UsadModel(nn.Module):
 def evaluate(model, val_loader, n):
     outputs = [model.validation_step(to_device(batch,device), n) for [batch] in val_loader]
     return model.validation_epoch_end(outputs)
+
+def evaluate_version2(model, val_loader, n):
+    resulting_w1 = []
+    resulting_w3 = []
+    for [batch] in val_loader:
+       outputs, w1, w3 = model.validation_step_v2(to_device(batch, device))
+       resulting_w1.append(w1)
+       resulting_w3.append(w3)
+    return model.validation_epoch_end(outputs), resulting_w1, resulting_w3
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): #opt1 = None, opt2 = None, resume_training = False
     history = []
@@ -111,6 +130,34 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         model.epoch_end(epoch, result)
         history.append(result)
     return history#, optimizer1, optimizer2
+
+def training_v2(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
+    history = []
+    optimizer1 = opt_func(list(model.encoder.parameters())+list(model.decoder1.parameters()))
+    optimizer2 = opt_func(list(model.encoder.parameters())+list(model.decoder2.parameters()))
+    
+    for epoch in range(epochs):
+        for [batch] in train_loader:
+            batch=to_device(batch,device)
+            
+            #Train AE1
+            loss1,loss2 = model.training_step(batch,epoch+1)
+            loss1.backward()
+            optimizer1.step()
+            optimizer1.zero_grad()
+            
+            
+            #Train AE2
+            loss1,loss2 = model.training_step(batch,epoch+1)
+            loss2.backward()
+            optimizer2.step()
+            optimizer2.zero_grad()
+            
+            
+        result, w1, w3 = evaluate_version2(model, val_loader, epoch+1)
+        model.epoch_end(epoch, result)
+        history.append(result)
+    return history, w1, w3
     
 def testing(model, test_loader, alpha=.5, beta=.5):
     # QUI: farsi restituire anche w1 e w2 per fare il confronto con i valori originali
