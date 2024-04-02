@@ -191,15 +191,19 @@ def testing_prova(model, test_loader, alpha=.5, beta=.5):
 
 def reconstruction(model, test_loader):
   # QUI: il test loader che viene passato è ottenuto con non-overlapping sliding window
+  tensors_w1 = []
+  tensors_w2 = []
   with torch.no_grad():
       for [batch] in test_loader: #N.B.: batch, w1, w2 sono tensori torch.tensor
           batch=to_device(batch,device)
           w1=model.decoder1(model.encoder(batch))
           w2=model.decoder2(model.encoder(w1))
+          tensors_w1.append(w1)
+          tensors_w2.append(w2)
   # Restituisci solo le ricostruzioni da parte dei due autoencoder
   # Per determinare le anomalie: come facevamo con le baseline, da capire solo come mettere insieme i risultati del primo e del secondo decoder
   # Forse anche qui possiamo calcolare le loss, e almeno per il momento farne una media pesata... no?
-  return w1, w2
+  return tensors_w1, tensors_w2
 """
 Codice per ricominciare il training dal checkpoint
 def load_ckp(checkpoint_fpath, model, optimizer):
