@@ -21,22 +21,27 @@ class Encoder(nn.Module):
     self.relu = nn.ReLU(True)
     self.dropout = nn.Dropout(p=0.2)
   def forward(self, w):
-    out = self.conv1(w) #w
+    #print("Input encoder", w.size())
+    #w = w.reshape((w.size()[0], w.size()[1], 1))
+    out = self.conv1(w.permute(0, 2, 1)) #w #x.permute(0, 2, 1) ---> needed because conv1d wants input in form (batch, n_features, window_size)
     out = self.relu(out)
     out = self.dropout(out)
+    #print("Conv1 encoder", out.size())
     out = self.conv2(out)
     out = self.relu(out)
+    #print("Conv2 encoder", out.size())
     out = self.conv3(out)
     z = self.relu(out)
+    #print("output encoder: ", z.size())
     return z
     
 class Decoder(nn.Module):
   def __init__(self, latent_size, out_size):
     super().__init__()
-    self.conv1 = nn.ConvTranspose1d(8, 16, 7, 2, 3)
-    self.conv2 = nn.ConvTranspose1d(16, 16, 7, 2, 3)
-    self.conv3 = nn.ConvTranspose1d(16, 32, 7, 2, 3)
-    self.conv4 = nn.ConvTranspose1d(32, 1, 7, 2, 3)
+    self.conv1 = nn.ConvTranspose1d(8, 16, 7, 2, 3 , 1)
+    #self.conv2 = nn.ConvTranspose1d(16, 16, 7, 2, 3)
+    self.conv3 = nn.ConvTranspose1d(16, 32, 7, 2, 3, 1)
+    self.conv4 = nn.ConvTranspose1d(32, 1, 7, 2, 3, 1)
     """
     self.linear1 = nn.Linear(latent_size, int(out_size/4))
     self.linear2 = nn.Linear(int(out_size/4), int(out_size/2))
@@ -47,16 +52,21 @@ class Decoder(nn.Module):
     self.sigmoid = nn.Sigmoid()
         
   def forward(self, z):
+    #print("Input decoder: ", z.size())
     out = self.conv1(z)
     out = self.relu(out)
-    out = self.conv2(out)
-    out = self.relu(out)
+    #print("Conv1 decoder", out.size())
+    #out = self.conv2(out)
+    #out = self.relu(out)
     out = self.dropout(out)
+    #print("Conv1 decoder", out.size())
     out = self.conv3(out)
     out = self.relu(out)
+    #print("Conv3 decoder", out.size())
     out = self.conv4(out) 
     w = self.sigmoid(out)
-    return w
+    #print("Output decoder (before permutation): ", w.size())
+    return w.permute(0, 2, 1)
     
 class UsadModel(nn.Module):
   def __init__(self, w_size, z_size):
@@ -66,10 +76,15 @@ class UsadModel(nn.Module):
     self.decoder2 = Decoder(z_size, w_size)
   
   def training_step(self, batch, n):
+    #print("Batch: ", batch.size())
     z = self.encoder(batch)
+    #print("Encoder output z: ", z.size())
     w1 = self.decoder1(z)
+    #print("Decoder1 output w1: ", w1.size())
     w2 = self.decoder2(z)
+    #print("Decoder output w2: ", w2.size())
     w3 = self.decoder2(self.encoder(w1))
+    #print("Decoder output w3: ", w3.size())
     loss1 = 1/n*torch.mean((batch-w1)**2)+(1-1/n)*torch.mean((batch-w3)**2)
     loss2 = 1/n*torch.mean((batch-w2)**2)-(1-1/n)*torch.mean((batch-w3)**2)
     return loss1,loss2
