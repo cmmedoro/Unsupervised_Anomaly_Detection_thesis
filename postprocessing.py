@@ -47,11 +47,11 @@ def padding_w(w, batch_size):
   # characterizing a single batch, therefore a proper padding needs to be ensured. Moreover, with this function, we also transform
   # the padded output into a suitable format to perform the following operations to obtain the reconstructed input
   last = w[-1]
-  padded_last = F.pad(last, (0, 0, 0, batch_size-w.size()[0]))
+  padded_last = F.pad(last, (0, 0, 0, batch_size-last.size()[0]))
   new_lista = w[:-1]
   new_lista.append(padded_last)
   res_w = torch.cat(new_lista, dim=0)
-  index = batch_size-w.size()[0]
+  index = batch_size-last.size()[0]
   original_rec = res_w[:-index]
   origin_rec = original_rec.detach().cpu().numpy()
 
