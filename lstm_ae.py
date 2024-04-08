@@ -1,52 +1,35 @@
 import torch
 import torch.nn as nn
-from tqdm import tqdm
 
 from utils import *
 device = get_default_device()
 
 class Encoder(nn.Module):
-  def __init__(self, n_features, latent_size): #(1, 32)
+  def __init__(self, in_size, latent_size): 
     super().__init__()
-    # CONVOLUTIONAL ENCODER
-    #in_channels = n_features
-    self.conv1 = nn.Conv1d(in_channels=n_features, out_channels= latent_size, kernel_size=7, padding=3, stride=2)
-    self.conv2 = nn.Conv1d(in_channels=latent_size, out_channels= latent_size//2, kernel_size=7, padding=3, stride=2)
-    self.conv3 = nn.Conv1d(in_channels=latent_size//2, out_channels= latent_size//4, kernel_size=7, padding=3, stride=2)
-    self.relu = nn.ReLU(True)
-    self.dropout = nn.Dropout(p=0.2)
+    self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
+            # input and output tensors are provided as (batch, seq_len, feature(size))
+        )
   def forward(self, w):
-    out = self.conv1(w.permute(0, 2, 1)) #w #x.permute(0, 2, 1) ---> needed because conv1d wants input in form (batch, n_features, window_size)
-    out = self.relu(out)
-    out = self.dropout(out)
-    out = self.conv2(out)
-    out = self.relu(out)
-    out = self.conv3(out)
-    z = self.relu(out)
-    return z
+    z, (h_n, c_n) = self.lstm(w)
+    # Here: do you return the output z or the last hidden state? Maybe the hidden state
+    return h_n
     
 class Decoder(nn.Module):
-  def __init__(self, latent_size, out_size): #(32, 1)
+  def __init__(self, latent_size, out_size): 
     super().__init__()
-    self.conv1 = nn.ConvTranspose1d(latent_size//4, latent_size//2, 7, 2, 3 , 1)
-    self.conv3 = nn.ConvTranspose1d(latent_size//2, latent_size, 7, 2, 3, 1)
-    self.conv4 = nn.ConvTranspose1d(latent_size, out_size, 7, 2, 3, 1)
-    self.relu = nn.ReLU(True)
-    self.dropout = nn.Dropout(p=0.2)
-    self.sigmoid = nn.Sigmoid()
+    self.lstm = nn.LSTM(input_size=latent_size, hidden_size=out_size, num_layers=1, batch_first=True, dropout = 0.2
+            # input and output tensors are provided as (batch, seq_len, feature(size))
+        )
+    self.output_layer = nn.Linear(latent_size, out_size)
         
   def forward(self, z):
-    out = self.conv1(z)
-    out = self.relu(out)
-    out = self.dropout(out)
-    out = self.conv3(out)
-    out = self.relu(out)
-    out = self.conv4(out) 
-    w = self.sigmoid(out)
-    return w.permute(0, 2, 1)
+    w, (h_n, c_n) = self.lstm(z)
+    out = self.output_layer(w)
+    return out
     
-class ConvAE(nn.Module):
-  def __init__(self, input_dim, latent_size): #(1, 32)
+class LstmAE(nn.Module):
+  def __init__(self, input_dim, latent_size): 
     super().__init__()
     self.encoder = Encoder(input_dim, latent_size)
     self.decoder = Decoder(latent_size, input_dim)
@@ -92,7 +75,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     # Setup loss function
     criterion = nn.MSELoss().to(device)
-    for epoch in tqdm(range(epochs)):
+    for epoch in range(epochs):
         for [batch] in train_loader:
             batch=to_device(batch,device)
 
