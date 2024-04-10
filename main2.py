@@ -4,13 +4,13 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.utils.data as data_utils
-#from usad import *
+from linear_ae import *
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score
 from postprocessing import *
 import plotly.graph_objects as go
-from usad_conv import *
+#from usad_conv import *
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -62,7 +62,7 @@ windows_attack.shape
 import torch.utils.data as data_utils
 
 BATCH_SIZE =  7919
-N_EPOCHS = 100
+N_EPOCHS = 2
 hidden_size = 100
 
 w_size=windows_normal.shape[1]*windows_normal.shape[2] #12*51 = 612

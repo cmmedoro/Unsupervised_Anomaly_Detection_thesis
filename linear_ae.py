@@ -67,12 +67,12 @@ class UsadModel(nn.Module):
     print("Epoch [{}], val_loss1: {:.4f}, val_loss2: {:.4f}".format(epoch, result))
 
 
-def evaluate(model, val_loader, criterion, n):
+def evaluate(model, val_loader, n):
     batch_loss = []
     outputs = []
     for [batch] in val_loader:
        batch = to_device(batch, device)
-       loss, w = model.validation_step(batch, criterion, n)
+       loss, w = model.validation_step(batch, n)
        batch_loss.append(loss)
        outputs.append(w) 
 
