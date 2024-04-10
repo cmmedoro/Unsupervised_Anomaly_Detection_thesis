@@ -21,7 +21,7 @@ args = parser_file.parse_arguments()
 
 
 #### Open the dataset ####
-energy_df = pd.read_csv(r"/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
+energy_df = pd.read_csv(r"/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly']]
 
@@ -81,7 +81,7 @@ if args.do_reconstruction:
     ### RECONSTRUCTING ###
     # Recover checkpoint
     checkpoint_dir = args.checkpoint_dir
-    checkpoint = torch.load(checkpoint_dir+"/model_50epochs_uni_conv.pth")
+    checkpoint = torch.load(checkpoint_dir)
 
     model.encoder.load_state_dict(checkpoint['encoder'])
     model.decoder1.load_state_dict(checkpoint['decoder1'])
@@ -124,7 +124,7 @@ if args.do_reconstruction:
 
     pred_test = pd.merge(pred_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
 
-    #Questi vanno salvati da qualche parte ---> chiedi a Luca
+    
     print(classification_report(pred_test['anomaly'], pred_test['predicted_anomaly']))
     print(classification_report(pred_test['anomaly'], pred_test['predicted_anomaly2']))
     print(roc_auc_score(pred_test['anomaly'], pred_test['predicted_anomaly']))
