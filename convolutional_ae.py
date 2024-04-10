@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from utils import *
+from utils_ae import *
 device = get_default_device()
 
 class Encoder(nn.Module):
@@ -70,7 +70,7 @@ class ConvAE(nn.Module):
     return {'val_loss': epoch_loss.item()}"""
     
   def epoch_end(self, epoch, result):
-    print("Epoch [{}], val_loss: {:.4f}".format(epoch, result['val_loss']))
+    print("Epoch [{}], val_loss: {:.4f}".format(epoch, result))
     
 def evaluate(model, val_loader, criterion, n):
     batch_loss = []

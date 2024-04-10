@@ -56,3 +56,61 @@ def padding_w(w, batch_size):
   origin_rec = original_rec.detach().cpu().numpy()
 
   return origin_rec
+
+##### RECONSTRUCTION WITH NON-OVERLAPPING WINDOWS #####
+def get_wi_reconstructed(wi):
+  reshaped_wi = [torch.flatten(wi_el) for wi_el in wi]
+  stacked = torch.stack(reshaped_wi[:-1]).flatten()
+  stacked_array = stacked.cpu().numpy()
+  last_array = reshaped_wi[-1].cpu().numpy()
+  total = np.concatenate([stacked_array, last_array])
+  return total
+
+
+##### ANOMALY DETECTION #####
+def get_anomaly_dataset(test, total_w1, total_w2):
+  scaler = MinMaxScaler(feature_range=(0,1))
+  dfs_dict_1 = {}
+  for building_id, gdf in test.groupby("building_id"):
+      gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
+      dfs_dict_1[building_id] = gdf
+  predicted_df_test = pd.concat(dfs_dict_1.values())
+  predicted_df_test['reconstruction1'] = total_w1
+  predicted_df_test['reconstruction2'] = total_w2
+  return predicted_df_test
+
+def define_threshold(predicted_df_test, wi): # wi can be 1 or 2
+  col_loss = "relative_loss"+str(wi)
+  th = "threshold"+str(wi)
+  pred = "predicted_anomaly"+str(wi)
+  thresholds=np.array([])
+  for building_id, gdf in predicted_df_test.groupby("building_id"):
+      val_mre_loss_building = gdf[col_loss].values
+      building_threshold = (np.percentile(val_mre_loss_building, 75)) + 1.5 *((np.percentile(val_mre_loss_building, 75))-(np.percentile(val_mre_loss_building, 25)))
+      gdf['threshold']=building_threshold
+      thresholds= np.append(thresholds, gdf['threshold'].values)
+  predicted_df_test[th]= thresholds
+  predicted_df_test[pred] = predicted_df_test[col_loss] > predicted_df_test[th]
+  predicted_df_test[pred]=predicted_df_test[pred].replace(False,0)
+  predicted_df_test[pred]=predicted_df_test[pred].replace(True,1)
+  return predicted_df_test
+
+# Anomaly detection for overlapping windows
+def get_overl_anomaly(train_window, test):
+  scaler = MinMaxScaler(feature_range=(0,1))
+  dfs_dict_1 = {}
+  for building_id, gdf in test.groupby("building_id"):
+    gdf[['meter_reading', 'sea_level_pressure']]=scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
+    dfs_dict_1[building_id] = gdf[train_window:]
+  predicted_df = pd.concat(dfs_dict_1.values())
+  return predicted_df
+
+def define_overl_threshold(predicted_df_test, perc): # wi can be 1 or 2
+  threshold = (np.percentile(predicted_df_test.anomaly_score.values, perc))
+  predicted_df_test['threshold'] = threshold
+  predicted_df_test['predicted_anomaly'] = predicted_df_test.anomaly_score > predicted_df_test['threshold']
+  predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(False,0)
+  predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(True,1)
+  return predicted_df_test
+
+  

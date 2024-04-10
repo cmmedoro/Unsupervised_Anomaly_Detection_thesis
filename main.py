@@ -50,10 +50,13 @@ if __name__ == "__main__":
     train_window = args.train_window
     X_train, y_train = create_train_eval_sequences(train, train_window)
     X_val, y_val = create_train_eval_sequences(val, train_window)
-    #Overlapping windows
-    X_test, y_test = create_train_eval_sequences(test, train_window)
-    #Non overlapping windows
-    #X_test, y_test = create_test_sequences(test, train_window)
+    
+    if args.do_test:
+        # Overlapping windows
+        X_test, y_test = create_train_eval_sequences(test, train_window)
+    else:
+        # Non-overlapping windows
+        X_test, y_test = create_test_sequences(test, train_window)
 
     BATCH_SIZE =  args.batch_size
     N_EPOCHS = args.epochs
@@ -93,8 +96,8 @@ if __name__ == "__main__":
                 'decoder2': model.decoder2.state_dict()
                 }, checkpoint_path+"/model_100epochs_univariate.pth") # the path should be changed
 
-    if args.do_testing:
-        ### TESTING ###
+    if args.do_reconstruction:
+        ### RECONSTRUCTING ###
         # Recover checkpoint
         checkpoint_dir = args.checkpoint_dir
         checkpoint = torch.load(checkpoint_dir+"/model_50epochs_uni_conv.pth")
@@ -104,22 +107,68 @@ if __name__ == "__main__":
         model.decoder2.load_state_dict(checkpoint['decoder2'])
 
         w1_non_overl, w2_non_overl = reconstruction(model, test_loader)
+
+        #In realtà forse la parte dopo può essere tutta messa in un notebook: basta salvare gli output della ricostruzione
+        #Perchè il fatto è che semplicemente non si possono usare i notebook per fare training del modello, ma da qui in poi
+        #si tratta di visualizzare i risultati
         if model_type == "conv_ae":
             w1 = [torch.reshape(w1_el, (w1_el.size()[0], w1_el.size()[1])) for w1_el in w1_non_overl]
             w2 = [torch.reshape(w2_el, (w2_el.size()[0], w2_el.size()[1])) for w2_el in w2_non_overl]
 
         # w1
-        reshaped_w1 = [torch.flatten(w1_el) for w1_el in w1_non_overl]
-        stacked = torch.stack(reshaped_w1[:-1]).flatten()
-        stacked_array = stacked.cpu().numpy()
-        last_array = reshaped_w1[-1].cpu().numpy()
-        total = np.concatenate([stacked_array, last_array])
-
+        total_w1 = get_wi_reconstructed(w1) #OR: w1_non_overl
+        
         # w2
-        reshaped_w2 = [torch.flatten(w2_el) for w2_el in w2_non_overl]
-        stacked2 = torch.stack(reshaped_w2[:-1]).flatten()
-        stacked_array2 = stacked2.cpu().numpy()
-        last_array2 = reshaped_w2[-1].cpu().numpy()
-        total2 = np.concatenate([stacked_array2, last_array2])
+        total_w2 = get_wi_reconstructed(w2) #OR: w2_non_overl
 
+        # ANOMALY DETECTION
+        pred_test = get_anomaly_dataset(test, total_w1, total_w2)
+
+        pred_test['relative_loss1'] = np.abs((pred_test['reconstruction1']-pred_test['meter_reading'])/pred_test['reconstruction1'])
+        pred_test['relative_loss2'] = np.abs((pred_test['reconstruction2']-pred_test['meter_reading'])/pred_test['reconstruction2'])
+
+        # Thresholds
+        pred_test = define_threshold(pred_test, 1)
+        pred_test = define_threshold(pred_test, 2)
+
+        pred_test.index.names=['timestamp']
+        pred_test= pred_test.reset_index()
+
+        pred_test = pd.merge(pred_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
+
+        #Questi vanno salvati da qualche parte ---> chiedi a Luca
+        print(classification_report(pred_test['anomaly'], pred_test['predicted_anomaly']))
+        print(classification_report(pred_test['anomaly'], pred_test['predicted_anomaly2']))
+        print(roc_auc_score(pred_test['anomaly'], pred_test['predicted_anomaly']))
+        print(roc_auc_score(pred_test['anomaly'], pred_test['predicted_anomaly2']))
+    elif args.do_test:
+        ### TESTING ###
+        # Recover checkpoint
+        checkpoint_dir = args.checkpoint_dir
+        checkpoint = torch.load(checkpoint_dir+"/model_50epochs_uni_conv.pth")
+
+        model.encoder.load_state_dict(checkpoint['encoder'])
+        model.decoder1.load_state_dict(checkpoint['decoder1'])
+        model.decoder2.load_state_dict(checkpoint['decoder2'])
+
+        results = testing(model,test_loader)
+
+        pred_test = get_overl_anomaly(train_window, test)
+
+        res_list = []
+        for el in results:
+            for el2 in el:
+                res_list.append(el2.cpu().item())
+
+        pred_test['anomaly_score'] = res_list
+
+        pred_test = define_overl_threshold(pred_test, 90)
+
+        pred_test.index.names=['timestamp']
+        pred_test= pred_test.reset_index()
+
+        pred_test = pd.merge(pred_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
+
+        print(classification_report(pred_test.anomaly, pred_test.predicted_anomaly))
+        roc_auc_score(pred_test['anomaly'], pred_test['predicted_anomaly'])
 

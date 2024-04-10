@@ -1,0 +1,15 @@
+#!/bin/bash 
+#SBATCH --time=2:00:00
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=telegram:1243631379
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --partition=RTX
+#SBATCH --gpus=1
+#SBATCH --job-name=anomaly
+#SBATCH --mem=32GB
+#SBATCH --output=outputs/%j.log
+#SBATCH --error=outputs/%j.err
+# execute script
+source .venv/bin/activate
+python train.py --data_dir dataset_crop --gt_label_weight 10 --soft_label_weight 0.1 --epochs 100 --batch_size 8 --lr 1e-3 --scheduler lronplateau --optimizer adam --model pixelcnn --loss mae --resampling down
