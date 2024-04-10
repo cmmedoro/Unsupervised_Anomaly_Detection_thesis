@@ -64,7 +64,7 @@ class UsadModel(nn.Module):
     return {'val_loss1': epoch_loss1.item()}"""
     
   def epoch_end(self, epoch, result):
-    print("Epoch [{}], val_loss1: {:.4f}, val_loss2: {:.4f}".format(epoch, result))
+    print("Epoch [{}], val_loss1: {:.4f}".format(epoch, result))
 
 
 def evaluate(model, val_loader, n):

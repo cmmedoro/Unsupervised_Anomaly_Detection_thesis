@@ -65,7 +65,8 @@ def evaluate(model, val_loader, criterion, n):
        outputs.append(w) 
 
     epoch_loss = torch.stack(batch_loss).mean()
-    w_s = torch.stack(outputs)
+    #w_s = torch.stack(outputs)
+    w_s = outputs
     return epoch_loss, w_s
 
 
