@@ -27,6 +27,7 @@ def parse_arguments():
 
     parser.add_argument("--save_checkpoint_dir", type = str, default = None, help = "Indicate folder to store model checkpoint")
     parser.add_argument("--checkpoint_dir", type = str, default = None, help = "Indicate folder to retrieve model checkpoint")
+    parser.add_argument("--res_dir", type = str, default = None, help = "Directory to save model outputs")
     
     args = parser.parse_args()
     return args
