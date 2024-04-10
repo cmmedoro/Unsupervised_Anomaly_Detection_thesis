@@ -3,3 +3,6 @@ data
 pyvenv.cfg
 .venv
 __pycache__
+outputs
+jobs
+
