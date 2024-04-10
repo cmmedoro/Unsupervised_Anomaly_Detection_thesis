@@ -78,7 +78,7 @@ def evaluate(model, val_loader, n):
 
     epoch_loss = torch.stack(batch_loss).mean()
     w_s = outputs
-    return epoch_loss, w_s
+    return epoch_loss.item(), w_s
     
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
