@@ -56,7 +56,7 @@ class UsadModel(nn.Module):
         z = self.encoder(batch)
         w = self.decoder(z)
         loss = torch.mean((batch-w)**2)
-    return loss, w
+    return loss#, w
         
   """def validation_epoch_end(self, outputs):
     batch_losses1 = [x['val_loss1'] for x in outputs]
@@ -69,21 +69,21 @@ class UsadModel(nn.Module):
 
 def evaluate(model, val_loader, n):
     batch_loss = []
-    outputs = []
+    #outputs = []
     for [batch] in val_loader:
        batch = to_device(batch, device)
-       loss, w = model.validation_step(batch, n)
+       loss = model.validation_step(batch, n) #, w
        batch_loss.append(loss)
-       outputs.append(w) 
+       #outputs.append(w) 
 
     epoch_loss = torch.stack(batch_loss).mean()
-    w_s = outputs
-    return epoch_loss.item(), w_s
+    #w_s = outputs
+    return epoch_loss.item()#, w_s
     
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
     history = []
-    reconstructions = []
+    #reconstructions = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     
     for epoch in range(epochs):
@@ -96,11 +96,11 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.step()
             optimizer.zero_grad()            
             
-        result, reconstruction = evaluate(model, val_loader, epoch+1)
+        result = evaluate(model, val_loader, epoch+1) #, reconstruction
         model.epoch_end(epoch, result)
         history.append(result)
-        reconstructions.append(reconstruction)
-    return history, reconstructions
+        #reconstructions.append(reconstruction)
+    return history#, reconstructions
     
 def testing(model, test_loader, alpha=.5, beta=.5):
     results=[]
