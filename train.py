@@ -68,7 +68,8 @@ print(model)
 
 # Start training
 history = training(N_EPOCHS, model, train_loader, val_loader)
-plot_history(history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/jobs/outputs/history_usad_odin.npy', history)
+#plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 torch.save({
         'encoder': model.encoder.state_dict(),
