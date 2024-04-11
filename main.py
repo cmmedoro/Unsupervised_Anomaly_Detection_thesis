@@ -23,8 +23,6 @@ device = get_default_device()
 if __name__ == "__main__":
     args = parser_file.parse_arguments()
 
-
-
     #### Open the dataset ####
     energy_df = pd.read_csv(r"/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
     # Select some columns from the original dataset

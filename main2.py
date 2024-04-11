@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.utils.data as data_utils
-from linear_ae import *
+from USAD.usad import *
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score
@@ -93,7 +93,8 @@ model = to_device(model,device)
 
 history = training(N_EPOCHS,model,train_loader,val_loader)
 
-plot_history(history)
+#plot_history(history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/jobs/outputs/history_usad_odin.npy', history)
 
 torch.save({
             'encoder': model.encoder.state_dict(),
