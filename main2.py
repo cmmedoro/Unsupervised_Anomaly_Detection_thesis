@@ -11,11 +11,14 @@ from sklearn.metrics import classification_report, roc_auc_score
 from postprocessing import *
 import plotly.graph_objects as go
 #from usad_conv import *
+import parser_file
 
 import warnings
 warnings.filterwarnings('ignore')
 
 device = get_default_device()
+
+args = parser_file.parse_arguments()
 
 #Read data
 normal = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/SWaT_Dataset_Normal_v1.csv")
@@ -51,7 +54,7 @@ x = attack.values
 x_scaled = min_max_scaler.transform(x)
 attack = pd.DataFrame(x_scaled)
 
-window_size=12 #9 ---> for better reconstruction #12
+window_size = args.train_window #9 ---> for better reconstruction #12
 
 windows_normal=normal.values[np.arange(window_size)[None, :] + np.arange(normal.shape[0]-window_size)[:, None]]
 windows_normal.shape
@@ -61,9 +64,9 @@ windows_attack.shape
 
 import torch.utils.data as data_utils
 
-BATCH_SIZE =  7919
-N_EPOCHS = 2
-hidden_size = 100
+BATCH_SIZE = args.batch_size
+N_EPOCHS = args.epochs
+hidden_size = args.hidden_size
 
 w_size=windows_normal.shape[1]*windows_normal.shape[2] #12*51 = 612
 z_size=windows_normal.shape[1]*hidden_size # 12*100 = 1200
@@ -93,6 +96,8 @@ model = to_device(model,device)
 
 history = training(N_EPOCHS,model,train_loader,val_loader)
 
+checkpoint_dir = args.save_checkpoint_dir
+
 #plot_history(history)
 np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/jobs/outputs/history_usad_odin.npy', history)
 
@@ -100,4 +105,4 @@ torch.save({
             'encoder': model.encoder.state_dict(),
             'decoder1': model.decoder1.state_dict(),
             'decoder2': model.decoder2.state_dict()
-            }, "/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/usad_model_odin.pth")
+            }, checkpoint_dir)  #"/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/usad_model_odin.pth"
