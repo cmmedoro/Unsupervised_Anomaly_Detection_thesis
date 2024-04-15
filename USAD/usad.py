@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 
 from USAD.utils import *
 device = get_default_device()
+#device = torch.device("cuda")
 
 class Encoder(nn.Module):
   def __init__(self, in_size, latent_size):
@@ -84,7 +86,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     optimizer1 = opt_func(list(model.encoder.parameters())+list(model.decoder1.parameters()))
     optimizer2 = opt_func(list(model.encoder.parameters())+list(model.decoder2.parameters()))
     
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs)):
         for [batch] in train_loader:
             batch=to_device(batch,device)
             

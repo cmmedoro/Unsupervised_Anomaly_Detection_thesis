@@ -17,6 +17,9 @@ import warnings
 warnings.filterwarnings('ignore')
 
 device = get_default_device()
+#device = torch.device("cuda")
+
+print(device)
 
 args = parser_file.parse_arguments()
 
@@ -69,7 +72,7 @@ N_EPOCHS = args.epochs
 hidden_size = args.hidden_size
 
 w_size=windows_normal.shape[1]*windows_normal.shape[2] #12*51 = 612
-z_size=windows_normal.shape[1]*hidden_size # 12*100 = 1200
+z_size=int(windows_normal.shape[1]*hidden_size) # 12*100 = 1200
 
 #ENCODER:
 #612 --> 306
@@ -90,8 +93,11 @@ val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(
 test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(
     torch.from_numpy(windows_attack).float().view(([windows_attack.shape[0],w_size]))
 ) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-
+print("Define model")
+print(w_size)
+print(z_size)
 model = UsadModel(w_size, z_size)
+#model.to(device)
 model = to_device(model,device)
 
 history = training(N_EPOCHS,model,train_loader,val_loader)
@@ -99,7 +105,7 @@ history = training(N_EPOCHS,model,train_loader,val_loader)
 checkpoint_dir = args.save_checkpoint_dir
 
 #plot_history(history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/jobs/outputs/history_usad_odin.npy', history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_odin.npy', history)
 
 torch.save({
             'encoder': model.encoder.state_dict(),
