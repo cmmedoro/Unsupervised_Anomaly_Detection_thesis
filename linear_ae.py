@@ -56,7 +56,7 @@ class UsadModel(nn.Module):
         z = self.encoder(batch)
         w = self.decoder(z)
         loss = torch.mean((batch-w)**2)
-    return loss#, w
+    return loss
         
   """def validation_epoch_end(self, outputs):
     batch_losses1 = [x['val_loss1'] for x in outputs]
@@ -69,21 +69,17 @@ class UsadModel(nn.Module):
 
 def evaluate(model, val_loader, n):
     batch_loss = []
-    #outputs = []
     for [batch] in val_loader:
        batch = to_device(batch, device)
-       loss = model.validation_step(batch, n) #, w
+       loss = model.validation_step(batch, n) 
        batch_loss.append(loss)
-       #outputs.append(w) 
 
     epoch_loss = torch.stack(batch_loss).mean()
-    #w_s = outputs
-    return epoch_loss.item()#, w_s
+    return epoch_loss.item()
     
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
     history = []
-    #reconstructions = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     
     for epoch in range(epochs):
@@ -96,11 +92,10 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.step()
             optimizer.zero_grad()            
             
-        result = evaluate(model, val_loader, epoch+1) #, reconstruction
+        result = evaluate(model, val_loader, epoch+1) 
         model.epoch_end(epoch, result)
         history.append(result)
-        #reconstructions.append(reconstruction)
-    return history#, reconstructions
+    return history
     
 def testing(model, test_loader, alpha=.5, beta=.5):
     results=[]
@@ -112,8 +107,8 @@ def testing(model, test_loader, alpha=.5, beta=.5):
     return results
 
 def testing_prova(model, test_loader, alpha=.5, beta=.5):
-    # QUI: farsi restituire anche w1 e w2 per fare il confronto con i valori originali
-    # Attenzione: w1 e w2 sono calcolati per batch, quindi bisogna poi metterli tutti insieme
+    # QUI: farsi restituire anche w1 per fare il confronto con i valori originali
+    # Attenzione: w1 viene calcolato per batch, quindi bisogna poi metterli tutti insieme
     # Problema: io sto passando il test_loader come sliding windows sovrapposte ---> perchè così funziona usad
     # Se però voglio visualizzare la ricostruzione, così non funziona più
     results=[]

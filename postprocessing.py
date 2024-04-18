@@ -6,6 +6,25 @@ from sklearn.preprocessing import MinMaxScaler
 import torch.nn.functional as F
 import torch
 
+# Define a function to turn possible anomalies in correspondance of original missing values into non anomalies
+# Note: in the dataset, all the meter readings having NaN are associated to 0 (not an anomaly), so the predictions should be accustumed to this
+def postprocessing_on_missing_values(dataframe_original, dataframe_post_reconstruction):
+  """
+  The dataframe_original contains a column, "is_na", which indicates with a True if that row contained a NaN in correspondence of the 
+  meter reading column. This is the
+  Firstly, we define a merge between the two datasets, so that we already prune the missing dates that we imputed originally.
+  Then, on the merged dataframe, we substitute all those anomalies which are not to be considered, as corresponded to NaN, into non-anomaly
+  """
+  corrected = []
+  for i, row in dataframe_post_reconstruction.iterrows():
+    if row.is_na == True:
+      corrected.append(0)
+    else:
+      corrected.append(row.predicted_anomaly)
+  dataframe_post_reconstruction.predicted_anomaly = corrected
+  #dataframe_post_reconstruction = pd.merge(dataframe_post_reconstruction, dataframe_original[['timestamp', 'building_id']], on = ['timestamp', 'building_id'])
+  return dataframe_post_reconstruction
+
 # Define a function to revert the sliding window application
 def reconstruction_windows(timeseries):
   """

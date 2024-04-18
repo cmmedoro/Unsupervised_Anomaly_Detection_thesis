@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import torch
 
 def impute_nulls(dataframe):
+    # Keep track of nan values for postprocessing
+    dataframe['is_na'] = dataframe.meter_reading.isna()
     # Sort the dataframe
     sorted_df = dataframe.sort_values(by = ['building_id', 'timestamp'])
     # We pass to lists because it is easier than dealing with Series objects
