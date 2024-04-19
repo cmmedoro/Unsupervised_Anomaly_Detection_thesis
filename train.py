@@ -11,7 +11,7 @@ from sklearn.metrics import classification_report, roc_auc_score
 from postprocessing import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
-#from usad_conv import *
+#from USAD.usad_conv import *
 import parser_file
 
 device = get_default_device()
@@ -68,7 +68,7 @@ print(model)
 
 # Start training
 history = training(N_EPOCHS, model, train_loader, val_loader)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/jobs/outputs/history_usad_odin.npy', history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_odin.npy', history)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 torch.save({

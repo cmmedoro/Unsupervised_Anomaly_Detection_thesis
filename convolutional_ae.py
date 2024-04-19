@@ -16,13 +16,18 @@ class Encoder(nn.Module):
     self.relu = nn.ReLU(True)
     self.dropout = nn.Dropout(p=0.2)
   def forward(self, w):
+    #print("Input E: ", w.size())
     out = self.conv1(w.permute(0, 2, 1)) #w #x.permute(0, 2, 1) ---> needed because conv1d wants input in form (batch, n_features, window_size)
+    #print("Conv1 E: ", out.size())
     out = self.relu(out)
     out = self.dropout(out)
     out = self.conv2(out)
+    #print("Conv2 E: ", out.size())
     out = self.relu(out)
     out = self.conv3(out)
+    #print("Conv3 E: ", out.size())
     z = self.relu(out)
+    #print("Output E: ", z.size())
     return z
     
 class Decoder(nn.Module):
@@ -36,13 +41,18 @@ class Decoder(nn.Module):
     self.sigmoid = nn.Sigmoid()
         
   def forward(self, z):
+    #print("Input D: ", z.size())
     out = self.conv1(z)
+    #print("Conv1 D: ", out.size())
     out = self.relu(out)
     out = self.dropout(out)
     out = self.conv3(out)
+    #print("Conv2 D: ", out.size())
     out = self.relu(out)
     out = self.conv4(out) 
+    #print("Conv3 D: ", z.size())
     w = self.sigmoid(out)
+    #print("Output D: ", w.size())
     return w.permute(0, 2, 1)
     
 class ConvAE(nn.Module):
@@ -62,7 +72,7 @@ class ConvAE(nn.Module):
         z = self.encoder(batch)
         w = self.decoder(z)
         loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
-    return loss, w
+    return loss#, w
         
   """def validation_epoch_end(self, outputs):
     batch_losses = [x for x in outputs]
@@ -74,26 +84,26 @@ class ConvAE(nn.Module):
     
 def evaluate(model, val_loader, criterion, n):
     batch_loss = []
-    outputs = []
+    #outputs = []
     for [batch] in val_loader:
        batch = to_device(batch, device)
-       loss, w = model.validation_step(batch, criterion, n)
+       loss = model.validation_step(batch, criterion, n) #, w
        batch_loss.append(loss)
-       outputs.append(w) 
+       #outputs.append(w) 
 
     epoch_loss = torch.stack(batch_loss).mean()
     #w_s = torch.stack(outputs)
-    w_s = outputs
-    return epoch_loss, w_s
+   # w_s = outputs
+    return epoch_loss#, w_s
 
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
     history = []
-    eval_output = []
+    #eval_output = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     # Setup loss function
     criterion = nn.MSELoss().to(device)
-    for epoch in tqdm(range(epochs)):
+    for epoch in range(epochs):
         for [batch] in train_loader:
             batch=to_device(batch,device)
 
@@ -103,11 +113,11 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.zero_grad()
             
             
-        result, w = evaluate(model, val_loader, criterion, epoch+1)
+        result = evaluate(model, val_loader, criterion, epoch+1) #
         model.epoch_end(epoch, result)
-        eval_output.append(w)
+        #eval_output.append(w)
         history.append(result)
-    return history, eval_output
+    return history#, eval_output
     
 def testing(model, test_loader):
     results=[]

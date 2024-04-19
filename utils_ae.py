@@ -58,7 +58,7 @@ def confusion_matrix(target, predicted, perc=False):
     data = {'y_Actual':    target,
             'y_Predicted': predicted
             }
-    df = pd.DataFrame(data, columns=['y_Predicted','y_Actual'])
+    df = pd.DataFrame(data, columns=['y_Actual','y_Predicted'])
     confusion_matrix = pd.crosstab(df['y_Predicted'], df['y_Actual'], rownames=['Predicted'], colnames=['Actual'])
     
     if perc:
