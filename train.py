@@ -88,7 +88,7 @@ if model_type == "lstm_ae" or model_type == "conv_ae":
 if model_type == "lstm_ae":
     model = LstmAE(n_channels, z_size, train_window)
 elif model_type == "conv_ae":
-    model = ConvAE(w_size, z_size)
+    model = ConvAE(n_channels, z_size)
 elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
 else:
