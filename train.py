@@ -101,7 +101,7 @@ print(model)
 # Start training
 history = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
-history_to_save = history.numpy()
+history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
 #plot_history(history)
 np.save('/content/checkpoints/history_lstm_prova.npy', history_to_save)
 #plot_history(history)
