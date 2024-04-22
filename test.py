@@ -121,7 +121,11 @@ if args.do_reconstruction:
         model.encoder.load_state_dict(checkpoint['encoder'])
         model.decoder.load_state_dict(checkpoint['decoder'])
 
-    results, w = testing(model, test_loader)
+    results, w = testing(model,test_loader)
+    #if not model_type.startswith("usad"):
+     #   results, w = testing(model, test_loader)
+    #else:
+     #   w = testing(model, test_loader)
 
     res_dir = args.res_dir
 
@@ -175,7 +179,12 @@ elif args.do_test:
         model.encoder.load_state_dict(checkpoint['encoder'])
         model.decoder.load_state_dict(checkpoint['decoder'])
 
-    results, w = testing(model,test_loader)
+    #results, w = testing(model,test_loader)
+    if not model_type.startswith("usad"):
+        results, w = testing(model, test_loader)
+    else:
+        w = testing(model, test_loader)
+
     # Qui va ad ottenere le label per ogni finestra
     # Input modello è una lista di array, ognuno corrispondente a una sliding window con stride = 1 sui dati originali
     # Quindi dobbiamo applicare la sliding window anche sulle label

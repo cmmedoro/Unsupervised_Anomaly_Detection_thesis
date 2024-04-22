@@ -38,8 +38,8 @@ elif model_type == "lstm_ae":
 device = get_default_device()
 
 #### Open the dataset ####
-#energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-energy_df = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/train_features.csv")
+energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
+#energy_df = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/train_features.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly']]
 
@@ -103,9 +103,9 @@ history = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
 if model_type == "lstm_ae" or model_type == "conv_ae":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-    np.save('/content/checkpoints/history_lstm_prova.npy', history_to_save)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy', history_to_save) #content/checkpoints er prove su drive
 else:
-    np.save('/content/checkpoints/history_lstm_prova.npy', history)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy', history)
 #plot_history(history)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir

@@ -23,7 +23,6 @@ def plot_history(history):
     plt.plot(history) #, label = "Evaluation loss"
     plt.xlabel('epoch')
     plt.ylabel('loss')
-    plt.legend()
     plt.title('Evaluation loss through epochs')
     plt.grid()
     plt.show()
