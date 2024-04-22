@@ -93,7 +93,7 @@ else:
     #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-if model_type == "lstm_ae":
+if model_type == "lstm_ae" or model_type == "conv_ae":
     z_size = 32
 # Create the model and send it on the gpu device
 if model_type == "lstm_ae":
