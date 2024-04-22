@@ -97,39 +97,14 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         history.append(result)
     return history
     
-def testing(model, test_loader, alpha=.5, beta=.5):
+def testing(model, test_loader):
     results=[]
+    reconstruction = []
     with torch.no_grad():
         for [batch] in test_loader: 
             batch=to_device(batch,device)
-            w = model.decoder(model.encoder(batch))
-            results.append(torch.mean((batch-w)**2,axis=1))
-    return results
-
-def testing_prova(model, test_loader, alpha=.5, beta=.5):
-    # QUI: farsi restituire anche w1 per fare il confronto con i valori originali
-    # Attenzione: w1 viene calcolato per batch, quindi bisogna poi metterli tutti insieme
-    # Problema: io sto passando il test_loader come sliding windows sovrapposte ---> perchè così funziona usad
-    # Se però voglio visualizzare la ricostruzione, così non funziona più
-    results=[]
-    tensors_w = []
-    with torch.no_grad():
-        for [batch] in test_loader:
-            batch=to_device(batch,device)
             w=model.decoder(model.encoder(batch))
-            tensors_w.append(w)
             results.append(torch.mean((batch-w)**2,axis=1))
-    return results, tensors_w
+            reconstruction.append(w)
+    return results, reconstruction
 
-def reconstruction(model, test_loader):
-  # QUI: il test loader che viene passato è ottenuto con non-overlapping sliding window
-  tensors_w = []
-  with torch.no_grad():
-      for [batch] in test_loader: #N.B.: batch, w1, w2 sono tensori torch.tensor
-          batch=to_device(batch,device)
-          w=model.decoder(model.encoder(batch))
-          tensors_w.append(w)
-  # Restituisci solo le ricostruzioni da parte dei due autoencoder
-  # Per determinare le anomalie: come facevamo con le baseline, da capire solo come mettere insieme i risultati del primo e del secondo decoder
-  # Forse anche qui possiamo calcolare le loss, e almeno per il momento farne una media pesata... no?
-  return tensors_w
