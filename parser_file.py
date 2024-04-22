@@ -17,7 +17,7 @@ def parse_arguments():
     - conv_usad ---> usad with convolution instead of linear layers
     - lstm_usad ---> usad with lstm layers instead of linear layers
     """
-    parser.add_argument("--model_type", type = bool, default = "usad", help = "Choose a model among usad, conv, lstm")
+    parser.add_argument("--model_type", type = str, default = "usad", help = "Choose a model among usad, conv, lstm")
 
     parser.add_argument("--epochs", type = int, default = 100)
 
