@@ -11,16 +11,18 @@ def parse_arguments():
     """
     Model type:
     - usad ---> usad architecture, with encoder and decoders
-    - linear ---> simple linear autoencoder (usad with just one decoder)
-    - conv ---> convolutional autoencoder
-    - lstm ---> lstm autoencoder
-    - conv_usad ---> usad with convolution instead of linear layers
-    - lstm_usad ---> usad with lstm layers instead of linear layers
+    - linear_ae ---> simple linear autoencoder (usad with just one decoder)
+    - conv_ae ---> convolutional autoencoder
+    - lstm_ae ---> lstm autoencoder
+    - usad_conv ---> usad with convolution instead of linear layers
+    - usad_lstm ---> usad with lstm layers instead of linear layers
     """
     parser.add_argument("--model_type", type = str, default = "usad", help = "Choose a model among usad, conv, lstm")
 
     parser.add_argument("--epochs", type = int, default = 100)
 
+    parser.add_argument("--do_resid", action = "store_true", help = "Whether to train and test on residuals")
+    
     parser.add_argument("--do_train", action = "store_true", help = "Whether to perform training or not")
     parser.add_argument("--do_test", action = "store_true", help = "Whether to perform testing or not") #Overlapping windows
     parser.add_argument("--do_reconstruction", action = "store_true", help = "Whether to perform reconstruction or not") #Non-overlapping windows
