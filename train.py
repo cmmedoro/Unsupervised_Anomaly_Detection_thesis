@@ -74,6 +74,7 @@ if model_type == "lstm_ae":
     z_size = 32
 # Create the model and send it on the gpu device
 model = LstmAE(n_channels, z_size, train_window)
+print(device)
 model = to_device(model, device)
 print(model)
 
