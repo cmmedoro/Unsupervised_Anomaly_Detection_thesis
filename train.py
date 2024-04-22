@@ -59,8 +59,10 @@ w_size = X_train.shape[1] * X_train.shape[2]
 z_size = int(w_size * hidden_size) 
 
 model_type = args.model_type
+print(model_type)
 
 if model_type == "conv_ae" or model_type == "lstm_ae":
+    print("OK")
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size, 1]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size, 1]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 else:
@@ -68,6 +70,7 @@ else:
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
 if model_type == "lstm_ae":
+    print("OK 2")
     z_size = 32
 # Create the model and send it on the gpu device
 model = LstmAE(n_channels, z_size, train_window)
