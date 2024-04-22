@@ -104,8 +104,9 @@ print(history)
 if model_type == "lstm_ae" or model_type == "conv_ae":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
     np.save('/content/checkpoints/history_lstm_prova.npy', history_to_save)
+else:
+    np.save('/content/checkpoints/history_lstm_prova.npy', history)
 #plot_history(history)
-np.save('/content/checkpoints/history_lstm_prova.npy', history)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 if model_type.startswith("usad"):
