@@ -103,7 +103,7 @@ history = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
 history_to_save = history.numpy()
 #plot_history(history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_odin.npy', history_to_save)
+np.save('/content/checkpoints/history_lstm_prova.npy', history_to_save)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 if model_type.startswith("usad"):
