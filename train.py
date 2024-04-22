@@ -114,9 +114,10 @@ history = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
 if model_type == "lstm_ae" or model_type == "conv_ae":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy', history_to_save) #content/checkpoints er prove su drive
+    # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
+    np.save('content/checkpoints', history_to_save) #content/checkpoints er prove su drive
 else:
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy', history)
+    np.save('content/checkpoints', history)
 #plot_history(history)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
