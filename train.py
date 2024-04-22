@@ -101,9 +101,11 @@ print(model)
 # Start training
 history = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
-history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
+if model_type == "lstm_ae":
+    history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
+    np.save('/content/checkpoints/history_lstm_prova.npy', history_to_save)
 #plot_history(history)
-np.save('/content/checkpoints/history_lstm_prova.npy', history_to_save)
+np.save('/content/checkpoints/history_lstm_prova.npy', history)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 if model_type.startswith("usad"):
