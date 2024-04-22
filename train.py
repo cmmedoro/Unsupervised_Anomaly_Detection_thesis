@@ -101,7 +101,7 @@ print(model)
 # Start training
 history = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
-if model_type == "lstm_ae":
+if model_type == "lstm_ae" or model_type == "conv_ae":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
     np.save('/content/checkpoints/history_lstm_prova.npy', history_to_save)
 #plot_history(history)
