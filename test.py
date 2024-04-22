@@ -183,7 +183,7 @@ elif args.do_test:
     if not model_type.startswith("usad"):
         results, w = testing(model, test_loader)
     else:
-        w = testing(model, test_loader)
+        results = testing(model, test_loader)
 
     # Qui va ad ottenere le label per ogni finestra
     # Input modello è una lista di array, ognuno corrispondente a una sliding window con stride = 1 sui dati originali
