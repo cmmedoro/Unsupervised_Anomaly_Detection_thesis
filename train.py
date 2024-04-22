@@ -12,8 +12,6 @@ import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file
 
-device = get_default_device()
-
 args = parser_file.parse_arguments()
 
 model_type = args.model_type
@@ -36,6 +34,8 @@ elif model_type == "conv_ae":
 elif model_type == "lstm_ae":
     from lstm_ae import *
     from utils_ae import *
+
+device = get_default_device()
 
 #### Open the dataset ####
 #energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
