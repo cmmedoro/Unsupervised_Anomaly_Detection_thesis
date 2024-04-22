@@ -39,7 +39,7 @@ class Decoder(nn.Module):
     w = self.sigmoid(out)
     return w
     
-class UsadModel(nn.Module):
+class LinearAE(nn.Module):
   def __init__(self, w_size, z_size):
     super().__init__()
     self.encoder = Encoder(w_size, z_size)
