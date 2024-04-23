@@ -40,7 +40,7 @@ device = get_default_device()
 #### Open the dataset ####
 # Original dataset
 #energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-energy_df = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/train_features.csv")
+energy_df = pd.read_csv("/content/drive/MyDrive/Backup_Carla_tesi_sorry_bisogno_di_gpu/train_features.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly']]
 
@@ -62,7 +62,7 @@ test = pd.concat(dfs_test.values())
 if args.do_resid:
     # Residuals dataset (missing values and dates imputation already performed)
     #residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
-    residuals = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/residuals.csv")
+    residuals = pd.read_csv("/content/drive/MyDrive/Backup_Carla_tesi_sorry_bisogno_di_gpu/residuals.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
@@ -115,9 +115,9 @@ print(history)
 if model_type == "lstm_ae" or model_type == "conv_ae":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
     # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
-    np.save('/content/checkpoints', history_to_save) #content/checkpoints er prove su drive
+    np.save('/content/checkpoints/history_usad_resid.npy', history_to_save) #content/checkpoints er prove su drive
 else:
-    np.save('/content/checkpoints', history)
+    np.save('/content/history_usad_resid.npy', history)
 #plot_history(history)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
