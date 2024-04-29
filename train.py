@@ -49,6 +49,8 @@ df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_
 imputed_df = impute_nulls(df)
 # 2) Add trigonometric features
 df = add_trigonometric_features(imputed_df)
+lags = [1, -1]
+df = create_diff_lag_features(df, lags)
 # 3) Resample the dataset: measurement frequency = "1h"
 dfs_dict = impute_missing_dates(df)
 df1 = pd.concat(dfs_dict.values())

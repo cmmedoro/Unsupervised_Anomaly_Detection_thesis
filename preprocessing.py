@@ -69,6 +69,36 @@ def add_trigonometric_features(dataframe):
   dataframe['weekday_x']=cos_transformer(7).fit_transform(dataframe['weekday'])
   return dataframe
 
+def create_lag_features(data_frame, list_lags):
+  # Create lag features: consider the column 'meter_reading' and for each row of the dataset add the information on the previous x hours
+  # This should be done by buildings: for each timeseries, meaning for each building, we need to perform this operation, which means that the first measurements are going
+  # to have some NaN values due to the fact that they have no x previous measurement
+  buildings = data_frame['building_id'].unique()
+  iterations = 0
+  for bid in buildings:
+    iterations += 1
+    df = data_frame[data_frame['building_id'] == bid]
+    for i in list_lags:
+      df[f'lag_{i}'] = df['meter_reading'].shift(i)
+    if iterations == 1:
+      df_final = df
+    else:
+      df_final = pd.concat([df_final, df])
+  return df_final
+
+def create_diff_lag_features(dataframe, list_lags):
+  df = create_lag_features(dataframe, list_lags)
+  col_names = []
+  for i in list_lags:
+    col_names.append(f'lag_{i}')
+  df.update(df[col_names].fillna(0))
+  diff_cols = []
+  for col in col_names:
+    df[f'diff_{col}'] = df[col] - df['meter_reading']
+    diff_cols.append(f'diff_{col}')
+  df.update(df[diff_cols].fillna(0))
+  return df
+
 def impute_missing_dates(dataframe):
   """
   Take first and last timestamp available. Create a new index starting from these two values, making sure that the index is 
