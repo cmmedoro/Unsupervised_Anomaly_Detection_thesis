@@ -45,17 +45,17 @@ class LinearAE(nn.Module):
     self.encoder = Encoder(w_size, z_size)
     self.decoder = Decoder(z_size, w_size)
   
-  def training_step(self, batch, n):
+  def training_step(self, batch, criterion, n):
     z = self.encoder(batch)
     w = self.decoder(z)
-    loss = torch.mean((batch-w)**2)
+    loss = criterion(w, batch) #torch.mean((batch-w)**2)
     return loss
 
-  def validation_step(self, batch, n):
+  def validation_step(self, batch, criterion, n):
     with torch.no_grad():
         z = self.encoder(batch)
         w = self.decoder(z)
-        loss = torch.mean((batch-w)**2)
+        loss = criterion(w, batch) #torch.mean((batch-w)**2)
     return loss
         
   """def validation_epoch_end(self, outputs):
@@ -67,11 +67,11 @@ class LinearAE(nn.Module):
     print("Epoch [{}], val_loss1: {:.4f}".format(epoch, result))
 
 
-def evaluate(model, val_loader, n):
+def evaluate(model, val_loader, criterion, n):
     batch_loss = []
     for [batch] in val_loader:
        batch = to_device(batch, device)
-       loss = model.validation_step(batch, n) 
+       loss = model.validation_step(batch, criterion, n) 
        batch_loss.append(loss)
 
     epoch_loss = torch.stack(batch_loss).mean()
@@ -81,18 +81,18 @@ def evaluate(model, val_loader, n):
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
     history = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
-    
+    criterion = nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
     for epoch in range(epochs):
         for [batch] in train_loader:
             batch=to_device(batch,device)
             
             #Train AE
-            loss = model.training_step(batch,epoch+1)
+            loss = model.training_step(batch, criterion, epoch+1)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()            
             
-        result = evaluate(model, val_loader, epoch+1) 
+        result = evaluate(model, val_loader, criterion, epoch+1) 
         model.epoch_end(epoch, result)
         history.append(result)
     return history
