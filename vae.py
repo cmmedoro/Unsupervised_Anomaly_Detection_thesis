@@ -63,7 +63,7 @@ class Decoder(nn.Module):
     #print("Output D: ", out.size())
     return out
     
-class LstmAE(nn.Module):
+class LstmVAE(nn.Module):
   def __init__(self, input_dim, latent_size, train_window): 
     super().__init__()
     self.encoder = Encoder(input_dim, latent_size)
