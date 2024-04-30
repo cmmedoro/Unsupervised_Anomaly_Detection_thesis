@@ -102,11 +102,11 @@ w_size, z_size
 
 if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_conv" or model_type == "usad_lstm" or model_type == "vae":
     #train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size, 1]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size, 1]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size, 1]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],w_size, 1]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 else:
     #train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
 if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
@@ -143,39 +143,52 @@ if args.do_reconstruction:
         results, w, mu, logvar = testing(model, test_loader)
     else:
         results, w = testing(model,test_loader)
-    #if not model_type.startswith("usad"):
-     #   results, w = testing(model, test_loader)
-    #else:
-     #   w = testing(model, test_loader)
+    
+    # Reconstruction of validation set
+    if model_type == "vae":
+        results_v, w_v, mu_v, logvar_v = testing(model, val_loader)
+    else:
+        results_v, w_v = testing(model,val_loader)
+
 
     res_dir = args.res_dir
 
-    reconstruction = np.concatenate([torch.stack(w[:-1]).flatten().detach().cpu().numpy(), w[-1].flatten().detach().cpu().numpy()])
-  
-    scaler = MinMaxScaler(feature_range=(0,1))
-    dfs_dict_1 = {}
-    for building_id, gdf in test.groupby("building_id"):
-        gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
-        dfs_dict_1[building_id] = gdf
-    predicted_df_test = pd.concat(dfs_dict_1.values())
+    reconstruction_test = np.concatenate([torch.stack(w[:-1]).flatten().detach().cpu().numpy(), w[-1].flatten().detach().cpu().numpy()])
+    reconstruction_val = np.concatenate([torch.stack(w_v[:-1]).flatten().detach().cpu().numpy(), w_v[-1].flatten().detach().cpu().numpy()])
+    
+    predicted_df_val = get_predicted_dataset(val, reconstruction_val)
+    predicted_df_test = get_predicted_dataset(test, reconstruction_test)
 
-    predicted_df_test['reconstruction'] = reconstruction
+    threshold_method = args.threshold
+    percentile = args.percentile
+    weight_overall = args.weights_overall
 
-    predicted_df_test['relative_loss'] = np.abs((predicted_df_test['reconstruction']-predicted_df_test['meter_reading'])/predicted_df_test['reconstruction'])
+    predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
+
+    #scaler = MinMaxScaler(feature_range=(0,1))
+    #dfs_dict_1 = {}
+    #for building_id, gdf in test.groupby("building_id"):
+     #   gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
+      #  dfs_dict_1[building_id] = gdf
+    #predicted_df_test = pd.concat(dfs_dict_1.values())
+
+    #predicted_df_test['reconstruction'] = reconstruction
+
+    #predicted_df_test['relative_loss'] = np.abs((predicted_df_test['reconstruction']-predicted_df_test['meter_reading'])/predicted_df_test['reconstruction'])
 
     #calculate threshold on relative loss quartiles but only on val, and in this case per building
-    thresholds=np.array([])
-    for building_id, gdf in predicted_df_test.groupby("building_id"):
-        val_mre_loss_building= gdf['relative_loss'].values
-        building_threshold = (np.percentile(val_mre_loss_building, 75)) + 1.5 *((np.percentile(val_mre_loss_building, 75))-(np.percentile(val_mre_loss_building, 25)))
-        gdf['threshold']=building_threshold
-        thresholds= np.append(thresholds, gdf['threshold'].values)
-    print(thresholds.shape)
-    predicted_df_test['threshold']= thresholds
+    #thresholds=np.array([])
+    #for building_id, gdf in predicted_df_test.groupby("building_id"):
+     #   val_mre_loss_building= gdf['relative_loss'].values
+      #  building_threshold = (np.percentile(val_mre_loss_building, 75)) + 1.5 *((np.percentile(val_mre_loss_building, 75))-(np.percentile(val_mre_loss_building, 25)))
+       # gdf['threshold']=building_threshold
+        #thresholds= np.append(thresholds, gdf['threshold'].values)
+    #print(thresholds.shape)
+    #predicted_df_test['threshold']= thresholds
 
-    predicted_df_test['predicted_anomaly'] = predicted_df_test['relative_loss'] > predicted_df_test['threshold']
-    predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(False,0)
-    predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(True,1)
+    #predicted_df_test['predicted_anomaly'] = predicted_df_test['relative_loss'] > predicted_df_test['threshold']
+    #predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(False,0)
+    #predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(True,1)
 
     predicted_df_test.index.names=['timestamp']
     predicted_df_test= predicted_df_test.reset_index()

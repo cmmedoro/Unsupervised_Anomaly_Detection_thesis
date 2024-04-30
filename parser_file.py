@@ -30,6 +30,10 @@ def parse_arguments():
     parser.add_argument("--save_checkpoint_dir", type = str, default = None, help = "Indicate folder to store model checkpoint")
     parser.add_argument("--checkpoint_dir", type = str, default = None, help = "Indicate folder to retrieve model checkpoint")
     parser.add_argument("--res_dir", type = str, default = None, help = "Directory to save model outputs")
-    
+
+    parser.add_argument("--threshold", type = int, default = 4, help = "Choose a threshold for anomaly detection")
+    parser.add_argument("--percentile", type = float, default = 0.95, help = "Choose a percentile for anomaly detection")
+    parser.add_argument("--weights_overall", type = int, default = 0.5, help = "Choose a weight for anomaly detection")
+
     args = parser.parse_args()
     return args
