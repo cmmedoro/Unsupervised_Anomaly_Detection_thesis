@@ -86,7 +86,7 @@ def evaluate(model, val_loader, criterion, n):
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
     history = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
-    criterion = nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
+    criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
     for epoch in range(epochs):
         for [batch] in train_loader:
             batch=to_device(batch,device)
@@ -105,7 +105,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
 def testing(model, test_loader):
     results=[]
     reconstruction = []
-    criterion = nn.KLDivLoss(reduction="batchmean").to(device)
+    criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device)
     with torch.no_grad():
         for [batch] in test_loader: 
             batch=to_device(batch,device)
