@@ -94,7 +94,11 @@ class LstmVAE(nn.Module):
     with torch.no_grad():
         h, z_hat, mu, logvar = self.encoder(batch)
         w = self.decoder(z_hat)
-        loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
+        loss_1 = criterion(w, batch)
+        loss_2 = self.regularization_loss(mu, logvar)
+        print("Reconstruction loss: ",loss_1.size())
+        print("Regularization loss: ", loss_2.size())
+        loss = loss_1 + loss_2#torch.mean((batch-w)**2) #loss = mse
     return loss
     
   def epoch_end(self, epoch, result):
