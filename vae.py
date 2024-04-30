@@ -15,8 +15,8 @@ class Encoder(nn.Module):
     self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
-    self.mean = nn.Linear(latent_dim)
-    self.log_var = nn.Linear(latent_dim)
+    self.mean = nn.Linear(latent_size, latent_dim)
+    self.log_var = nn.Linear(latent_size, latent_dim)
 
   def reparametrize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
