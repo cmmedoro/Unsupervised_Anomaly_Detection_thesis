@@ -66,7 +66,7 @@ class Decoder(nn.Module):
 class LstmVAE(nn.Module):
   def __init__(self, input_dim, latent_size, train_window): 
     super().__init__()
-    self.encoder = Encoder(input_dim, latent_size)
+    self.encoder = Encoder(input_dim, latent_size, latent_size)
     self.decoder = Decoder(latent_size, input_dim, train_window)
 
   def regularization_loss(self, mu, logvar):
