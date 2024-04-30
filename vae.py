@@ -27,17 +27,17 @@ class Encoder(nn.Module):
         return z
 
   def forward(self, w):
-    print("Input E: ", w.size())
+    #print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    print("Z: ", z.size())
-    print("H: ", h_n.size())
+    #print("Z: ", z.size())
+    #print("H: ", h_n.size())
     # Prova con h_n al posto di z 
     mu = self.mean(h_n)
-    print("Mu: ", mu.size())
+    #print("Mu: ", mu.size())
     logvar = self.log_var(h_n)
-    print("Var: ", logvar.size())
+    #print("Var: ", logvar.size())
     z_reparam = self.reparametrize(mu, logvar)
-    print("Z_reparametrized: ", z_reparam.size())
+    #print("Z_reparametrized: ", z_reparam.size())
     return h_n, z_reparam, mu, logvar
     
 class Decoder(nn.Module):
@@ -57,18 +57,18 @@ class Decoder(nn.Module):
   def forward(self, z):
     batch = z.size()[1]
     n_feats = z.size()[2]
-    print("Input D: ", z.size())
+    #print("Input D: ", z.size())
     z = z.reshape((batch, n_feats))
-    print("Reshaped input: ", z.size())
+    #print("Reshaped input: ", z.size())
     #input = z.reshape((batch, self.latent_size))
     input = z.repeat(1, self.window)
-    print(input.size())
+    #print(input.size())
     input = input.reshape((batch, self.window, self.latent_size))
-    print(input.size())
+    #print(input.size())
     w, (h_n, c_n) = self.lstm(input)
-    print("Out D: ", w.size())
+    #print("Out D: ", w.size())
     out = self.output_layer(w)
-    print("Output D: ", out.size())
+    #print("Output D: ", out.size())
     return out
     
 class LstmVAE(nn.Module):
@@ -90,8 +90,8 @@ class LstmVAE(nn.Module):
     w = self.decoder(z_hat)
     loss_1 = criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
-    print("Reconstruction loss: ",loss_1.size())
-    print("Regularization loss: ", loss_2.size())
+    #print("Reconstruction loss: ",loss_1.size())
+    #print("Regularization loss: ", loss_2.size())
     #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
     loss = loss_1 + loss_2
     return loss
@@ -102,8 +102,8 @@ class LstmVAE(nn.Module):
         w = self.decoder(z_hat)
         loss_1 = criterion(w, batch)
         loss_2 = self.regularization_loss(mu, logvar)
-        print("Reconstruction loss: ",loss_1.size())
-        print("Regularization loss: ", loss_2.size())
+        #print("Reconstruction loss: ",loss_1.size())
+        #print("Regularization loss: ", loss_2.size())
         loss = loss_1 + loss_2#torch.mean((batch-w)**2) #loss = mse
     return loss
     
