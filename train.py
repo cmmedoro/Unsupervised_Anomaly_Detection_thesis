@@ -11,6 +11,8 @@ from postprocessing import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file
+import warnings
+warnings.filterwarnings('ignore')
 
 args = parser_file.parse_arguments()
 

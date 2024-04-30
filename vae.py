@@ -26,10 +26,15 @@ class Encoder(nn.Module):
         return z
 
   def forward(self, w):
+    print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
+    print("Z: ", z.size())
     mu = self.mean(z)
+    print("Mu: ", mu.size())
     logvar = self.log_var(z)
+    print("Var: ", logvar.size())
     z_reparam = self.reparametrize(mu, logvar)
+    print("Z_reparametrized: ", z_reparam.size())
     return h_n, z_reparam, mu, logvar
     
 class Decoder(nn.Module):
