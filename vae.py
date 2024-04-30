@@ -87,7 +87,12 @@ class LstmVAE(nn.Module):
   def training_step(self, batch, criterion, n):
     h, z_hat, mu, logvar = self.encoder(batch)
     w = self.decoder(z_hat)
-    loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
+    loss_1 = criterion(w, batch)
+    loss_2 = self.regularization_loss(mu, logvar)
+    print("Reconstruction loss: ",loss_1.size())
+    print("Regularization loss: ", loss_2.size())
+    #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
+    loss = loss_1 + loss_2
     return loss
 
   def validation_step(self, batch, criterion, n):
