@@ -20,7 +20,8 @@ class Encoder(nn.Module):
 
   def reparametrize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
-        noise = torch.randn_like(std).to(self.device)
+        noise = torch.randn_like(std)
+        noise = to_device(noise, device)
 
         z = mu + noise * std
         return z
