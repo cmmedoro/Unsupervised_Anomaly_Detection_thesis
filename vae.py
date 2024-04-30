@@ -79,9 +79,10 @@ class LstmVAE(nn.Module):
 
   def regularization_loss(self, mu, logvar):
 
-        kld_loss = torch.mean(
-            -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0
-        )
+        #kld_loss = torch.mean(
+        #    -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0
+        #)
+        kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())
         return kld_loss
   
   def training_step(self, batch, criterion, n):
