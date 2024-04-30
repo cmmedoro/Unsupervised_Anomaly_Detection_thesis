@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 import torch.nn.functional as F
 import torch
 
@@ -195,8 +195,8 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday']]).astype(float) 
+      gdf[['meter_reading', 'diff_lag_1', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'diff_lag_1', 'resid']])
+      building_data = np.array(gdf[['meter_reading', 'diff_lag_1', 'resid']]).astype(float) 
       for i in range(len(building_data) - time_steps + 1):
         # find the end of this sequence
         end_ix = i + time_steps
@@ -228,8 +228,8 @@ def create_multivariate_test_sequences(dataframe, time_steps):
     output = []
     output2 = []
     for building_id, gdf in dataframe.groupby("building_id"):
-       gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y']])
-       building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday']]).astype(float) 
+       gdf[['meter_reading', 'diff_lag_1', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'diff_lag_1', 'resid']])
+       building_data = np.array(gdf[['meter_reading', 'diff_lag_1', 'resid']]).astype(float) 
        for i in range(0, len(building_data) - time_steps + 1, time_steps):
         end_ix = i + time_steps
         #if end_ix > len(gdf):

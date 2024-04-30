@@ -54,11 +54,12 @@ df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_
 imputed_df = impute_nulls(df)
 # 2) Add trigonometric features
 df = add_trigonometric_features(imputed_df)
-lags = [1, -1]
-df = create_diff_lag_features(df, lags)
+
 # 3) Resample the dataset: measurement frequency = "1h"
 dfs_dict = impute_missing_dates(df)
 df1 = pd.concat(dfs_dict.values())
+lags = [1, -1]
+df1 = create_diff_lag_features(df1, lags)
 
 # Split the dataset into train, validation and test
 dfs_train, dfs_val, dfs_test = train_val_test_split(df1)
@@ -77,11 +78,25 @@ if args.do_resid:
     val = pd.concat(dfs_val.values())
     test = pd.concat(dfs_test.values())
 print(train.columns)
+if args.do_multivariate:
+    residuals = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/residuals.csv")
+    residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
+    lags = [1, -1]
+    residui_df = create_diff_lag_features(residui_df, lags)
+    dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
+    train = pd.concat(dfs_train.values())
+    val = pd.concat(dfs_val.values())
+    test = pd.concat(dfs_test.values())
+
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 train_window = args.train_window
-X_train, y_train = create_train_eval_sequences(train, train_window)
-X_val, y_val = create_train_eval_sequences(val, train_window)
+if args.do_multivariate:
+    X_train, y_train = create_multivariate_train_eval_sequences(train, train_window)
+    X_val, y_val = create_multivariate_train_eval_sequences(val, train_window)
+else:
+    X_train, y_train = create_train_eval_sequences(train, train_window)
+    X_val, y_val = create_train_eval_sequences(val, train_window)
 
 
 BATCH_SIZE =  args.batch_size
@@ -95,8 +110,9 @@ w_size = X_train.shape[1] * X_train.shape[2]
 z_size = int(w_size * hidden_size) 
 
 if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_conv" or model_type == "usad_lstm" or model_type == "vae":
-    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size, 1]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size, 1]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    #Credo di dover cambiare X_train.shape[0], w_size, X_train.shape[2] con X_train.shape[0], X_train.shape[1], X_train.shape[2]
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], X_train.shape[1], X_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 else:
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
