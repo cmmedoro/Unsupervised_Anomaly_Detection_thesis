@@ -31,9 +31,10 @@ class Encoder(nn.Module):
     z, (h_n, c_n) = self.lstm(w)
     print("Z: ", z.size())
     print("H: ", h_n.size())
-    mu = self.mean(z)
+    # Prova con h_n al posto di z 
+    mu = self.mean(h_n)
     print("Mu: ", mu.size())
-    logvar = self.log_var(z)
+    logvar = self.log_var(h_n)
     print("Var: ", logvar.size())
     z_reparam = self.reparametrize(mu, logvar)
     print("Z_reparametrized: ", z_reparam.size())
