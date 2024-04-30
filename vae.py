@@ -30,6 +30,7 @@ class Encoder(nn.Module):
     print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
     print("Z: ", z.size())
+    print("H: ", h_n.size())
     mu = self.mean(z)
     print("Mu: ", mu.size())
     logvar = self.log_var(z)

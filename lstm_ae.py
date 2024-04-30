@@ -11,9 +11,9 @@ class Encoder(nn.Module):
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
   def forward(self, w):
-    #print("Input E: ", w.size())
+    print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    #print("Output E: ", h_n.size())
+    print("Output E: ", h_n.size())
     return h_n
     
 class Decoder(nn.Module):
@@ -29,18 +29,18 @@ class Decoder(nn.Module):
   def forward(self, z):
     batch = z.size()[1]
     n_feats = z.size()[2]
-    #print("Input D: ", z.size())
+    print("Input D: ", z.size())
     z = z.reshape((batch, n_feats))
-    #print("Reshaped input: ", z.size())
+    print("Reshaped input: ", z.size())
     #input = z.reshape((batch, self.latent_size))
     input = z.repeat(1, self.window)
-    #print(input.size())
+    print(input.size())
     input = input.reshape((batch, self.window, self.latent_size))
-    #print(input.size())
+    print(input.size())
     w, (h_n, c_n) = self.lstm(input)
-    #print("Out D: ", w.size())
+    print("Out D: ", w.size())
     out = self.output_layer(w)
-    #print("Output D: ", out.size())
+    print("Output D: ", out.size())
     return out
     
 class LstmAE(nn.Module):
