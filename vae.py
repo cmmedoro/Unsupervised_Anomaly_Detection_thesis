@@ -147,8 +147,8 @@ def testing(model, test_loader):
     with torch.no_grad():
         for [batch] in test_loader: 
             batch=to_device(batch,device)
-            h, z_hat = model.encoder(batch)
+            h, z_hat, mu, logvar= model.encoder(batch)
             w=model.decoder(z_hat)
             results.append(torch.mean((batch-w)**2,axis=1))
             reconstruction.append(w)
-    return results, reconstruction
+    return results, reconstruction, mu, logvar

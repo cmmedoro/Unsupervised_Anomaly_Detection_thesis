@@ -139,7 +139,10 @@ if args.do_reconstruction:
         model.encoder.load_state_dict(checkpoint['encoder'])
         model.decoder.load_state_dict(checkpoint['decoder'])
 
-    results, w = testing(model,test_loader)
+    if model_type == "vae":
+        results, w, mu, logvar = testing(model, test_loader)
+    else:
+        results, w = testing(model,test_loader)
     #if not model_type.startswith("usad"):
      #   results, w = testing(model, test_loader)
     #else:
