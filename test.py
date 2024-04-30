@@ -11,6 +11,8 @@ from postprocessing import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file
+import warnings
+warnings.filterwarnings('ignore')
 
 args = parser_file.parse_arguments()
 
@@ -33,6 +35,9 @@ elif model_type == "conv_ae":
     from utils_ae import *
 elif model_type == "lstm_ae":
     from lstm_ae import *
+    from utils_ae import *
+elif model_type == "vae":
+    from vae import *
     from utils_ae import *
 
 device = get_default_device()
@@ -95,7 +100,7 @@ w_size, z_size
 
 
 
-if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_conv" or model_type == "usad_lstm":
+if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_conv" or model_type == "usad_lstm" or model_type == "vae":
     #train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size, 1]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size, 1]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],w_size, 1]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
@@ -104,7 +109,7 @@ else:
     #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-if model_type == "lstm_ae" or model_type == "conv_ae":
+if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     z_size = 32
 # Create the model and send it on the gpu device
 if model_type == "lstm_ae":
@@ -113,6 +118,8 @@ elif model_type == "conv_ae":
     model = ConvAE(n_channels, z_size)
 elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
+elif model_type == "vae":
+    model = LstmVAE(n_channels, z_size, train_window)
 else:
     model = UsadModel(w_size, z_size)
 model = to_device(model, device)
