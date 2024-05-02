@@ -171,7 +171,7 @@ def threshold_rel_loss(val, percentile, predicted_df):
   threshold = (np.percentile(np.squeeze(val_mre_loss), percentile))
   predicted_df['threshold'] = threshold
   predicted_df['predicted_anomaly'] = predicted_df['rel_loss'] > predicted_df['threshold']
-  return threshold
+  return predicted_df
 
 def threshold_iqr_rel_loss(val, predicted_df):
   #Loss relativa
