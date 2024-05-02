@@ -163,7 +163,7 @@ def threshold_norm_abs_loss(val, percentile, predicted_df):
   #indexes = np.argmax(val_mae_loss)
   threshold = threshold/val['meter_reading'].values[index]
   predicted_df['threshold'] = threshold
-  predicted_df['predicted_anomaly'] = predicted_df['abs_loss'] > threshold * predicted_df['predictions']
+  predicted_df['predicted_anomaly'] = predicted_df['abs_loss'] > threshold * predicted_df['reconstruction']
   return predicted_df
 
 def threshold_rel_loss(val, percentile, predicted_df):
