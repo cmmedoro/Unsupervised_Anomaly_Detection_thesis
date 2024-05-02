@@ -186,7 +186,7 @@ def threshold_iqr_test(predicted_df):
   #calculate threshold on relative loss quartiles but only on test, and in this case per building
   thresholds=np.array([])
   for building_id, gdf in predicted_df.groupby("building_id"):
-    test_mre_loss_building= gdf['rel_loss'].testues
+    test_mre_loss_building= gdf['rel_loss'].values
     building_threshold = (np.percentile(np.squeeze(test_mre_loss_building), 75)) + 1.5 *((np.percentile(np.squeeze(test_mre_loss_building), 75))-(np.percentile(np.squeeze(test_mre_loss_building), 25)))
     gdf['threshold']=building_threshold
     thresholds= np.append(thresholds, gdf['threshold'].values)
