@@ -144,7 +144,7 @@ def get_predicted_dataset(dataset, reconstruction):
   predicted_df = pd.concat(dfs_dict_1.values())
   predicted_df['reconstruction'] = reconstruction
   predicted_df['abs_loss'] = np.abs(predicted_df.meter_reading - predicted_df.reconstruction)
-  predicted_df['rel_loss'] = np.abs((predicted_df['predictions']-predicted_df['meter_reading'])/predicted_df['predictions'])
+  predicted_df['rel_loss'] = np.abs((predicted_df['reconstruction']-predicted_df['meter_reading'])/predicted_df['reconstruction'])
   return predicted_df
 
 def threshold_abs_loss(val, percentile, predicted_df):
