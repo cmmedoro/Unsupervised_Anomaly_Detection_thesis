@@ -140,11 +140,13 @@ history, train_recos = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
 if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
+    train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
     # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
     np.save('/content/checkpoints/history_vae.npy', history_to_save) #/content/checkpoints er prove su drive
+    np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 else:
     np.save('/content/checkpoints/history_vae.npy', history)
-np.save('/content/checkpoints/train_recos.npy', train_recos)
+    
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 if model_type.startswith("usad"):
