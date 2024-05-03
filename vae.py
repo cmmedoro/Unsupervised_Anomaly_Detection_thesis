@@ -15,16 +15,16 @@ class Encoder(nn.Module):
     self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
-    self.mean = nn.Linear(latent_size, latent_dim)
-    self.log_var = nn.Linear(latent_size, latent_dim)
+    #self.mean = nn.Linear(latent_size, latent_dim)
+    #self.log_var = nn.Linear(latent_size, latent_dim)
 
-  def reparametrize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        noise = torch.randn_like(std)
-        noise = to_device(noise, device)
+  #def reparametrize(self, mu, logvar):
+   #     std = torch.exp(0.5 * logvar)
+    #    noise = torch.randn_like(std)
+     #   noise = to_device(noise, device)
 
-        z = mu + noise * std
-        return z
+      #  z = mu + noise * std
+       # return z
 
   def forward(self, w):
     #print("Input E: ", w.size())
@@ -32,13 +32,13 @@ class Encoder(nn.Module):
     #print("Z: ", z.size())
     #print("H: ", h_n.size())
     # Prova con h_n al posto di z 
-    mu = self.mean(h_n)
+    #mu = self.mean(h_n)
     #print("Mu: ", mu.size())
-    logvar = self.log_var(h_n)
+    #logvar = self.log_var(h_n)
     #print("Var: ", logvar.size())
-    z_reparam = self.reparametrize(mu, logvar)
+    #z_reparam = self.reparametrize(mu, logvar)
     #print("Z_reparametrized: ", z_reparam.size())
-    return h_n, z_reparam, mu, logvar
+    return h_n#, z_reparam, mu, logvar
     
 class Decoder(nn.Module):
   def __init__(self, latent_size, out_size, train_window): 
@@ -54,7 +54,7 @@ class Decoder(nn.Module):
         )
     self.output_layer = nn.Linear(latent_size, out_size)
         
-  def forward(self, z):
+  def forward(self, z, h):
     batch = z.size()[1]
     n_feats = z.size()[2]
     #print("Input D: ", z.size())
@@ -65,7 +65,7 @@ class Decoder(nn.Module):
     #print(input.size())
     input = input.reshape((batch, self.window, self.latent_size))
     #print(input.size())
-    w, (h_n, c_n) = self.lstm(input)
+    w, (h_n, c_n) = self.lstm(input, h)
     #print("Out D: ", w.size())
     out = self.output_layer(w)
     #print("Output D: ", out.size())
@@ -76,6 +76,16 @@ class LstmVAE(nn.Module):
     super().__init__()
     self.encoder = Encoder(input_dim, latent_size, latent_size)
     self.decoder = Decoder(latent_size, input_dim, train_window)
+    self.mean = nn.Linear(latent_size, latent_size)
+    self.log_var = nn.Linear(latent_size, latent_size)
+
+  def reparametrize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        noise = torch.randn_like(std)
+        noise = to_device(noise, device)
+
+        z = mu + noise * std
+        return z
 
   def regularization_loss(self, mu, logvar):
 
@@ -86,8 +96,11 @@ class LstmVAE(nn.Module):
         return kld_loss
   
   def training_step(self, batch, criterion, n):
-    h, z_hat, mu, logvar = self.encoder(batch)
-    w = self.decoder(z_hat)
+    h = self.encoder(batch) #, z_hat, mu, logvar
+    mu = self.mean(h)
+    logvar = self.log_var(h)
+    z_hat = self.reparametrize(mu, logvar)
+    w = self.decoder(z_hat, h)
     loss_1 = criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
     #print("Reconstruction loss: ",loss_1.size())
@@ -98,8 +111,11 @@ class LstmVAE(nn.Module):
 
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
-        h, z_hat, mu, logvar = self.encoder(batch)
-        w = self.decoder(z_hat)
+        h = self.encoder(batch) #, z_hat, mu, logvar
+        mu = self.mean(h)
+        logvar = self.log_var(h)
+        z_hat = self.reparametrize(mu, logvar)
+        w = self.decoder(z_hat, h)
         loss_1 = criterion(w, batch)
         loss_2 = self.regularization_loss(mu, logvar)
         #print("Reconstruction loss: ",loss_1.size())
@@ -147,8 +163,11 @@ def testing(model, test_loader):
     with torch.no_grad():
         for [batch] in test_loader: 
             batch=to_device(batch,device)
-            h, z_hat, mu, logvar= model.encoder(batch)
-            w=model.decoder(z_hat)
+            h = model.encoder(batch) #, z_hat, mu, logvar
+            mu = model.mean(h)
+            logvar = model.log_var(h)
+            z_hat = model.reparametrize(mu, logvar)
+            w = model.decoder(z_hat, h)
             results.append(torch.mean((batch-w)**2,axis=1))
             reconstruction.append(w)
     return results, reconstruction, mu, logvar
