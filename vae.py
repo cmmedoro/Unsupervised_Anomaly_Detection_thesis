@@ -55,7 +55,7 @@ class Decoder(nn.Module):
     self.output_layer = nn.Linear(latent_size, out_size)
         
   def forward(self, z, h):
-    print("Hidden state: ", h.size())
+    #print("Hidden state: ", h.size())
     print("Z_reparametrized: ", z.size())
     batch = z.size()[1]
     n_feats = z.size()[2]
@@ -68,7 +68,7 @@ class Decoder(nn.Module):
     #print(input.size())
     input = input.reshape((batch, self.window, self.latent_size))
     print(input.size(), h.size())
-    print(h.dim())
+    #print(h.dim())
     w, (h_n, c_n) = self.lstm(input, h)
     #print("Out D: ", w.size())
     out = self.output_layer(w)
@@ -104,7 +104,7 @@ class LstmVAE(nn.Module):
     mu = self.mean(h)
     logvar = self.log_var(h)
     z_hat = self.reparametrize(mu, logvar)
-    w = self.decoder(z_hat, h)
+    w = self.decoder(z_hat, (h, h))
     loss_1 = criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
     #print("Reconstruction loss: ",loss_1.size())
@@ -119,7 +119,7 @@ class LstmVAE(nn.Module):
         mu = self.mean(h)
         logvar = self.log_var(h)
         z_hat = self.reparametrize(mu, logvar)
-        w = self.decoder(z_hat, h)
+        w = self.decoder(z_hat, (h, h))
         loss_1 = criterion(w, batch)
         loss_2 = self.regularization_loss(mu, logvar)
         #print("Reconstruction loss: ",loss_1.size())
@@ -171,7 +171,7 @@ def testing(model, test_loader):
             mu = model.mean(h)
             logvar = model.log_var(h)
             z_hat = model.reparametrize(mu, logvar)
-            w = model.decoder(z_hat, h)
+            w = model.decoder(z_hat, (h, h))
             results.append(torch.mean((batch-w)**2,axis=1))
             reconstruction.append(w)
     return results, reconstruction, mu, logvar
