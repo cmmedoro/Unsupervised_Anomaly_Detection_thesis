@@ -215,10 +215,14 @@ elif args.do_test:
         model.decoder.load_state_dict(checkpoint['decoder'])
 
     #results, w = testing(model,test_loader)
-    if not model_type.startswith("usad"):
-        results, w = testing(model, test_loader)
+    #if not model_type.startswith("usad"):
+     #   results, w = testing(model, test_loader)
+    #else:
+     #   results = testing(model, test_loader)
+    if model_type == "vae":
+        results, w, mu, logvar = testing(model, test_loader)
     else:
-        results = testing(model, test_loader)
+        results, w = testing(model,test_loader)
 
     # Qui va ad ottenere le label per ogni finestra
     # Input modello è una lista di array, ognuno corrispondente a una sliding window con stride = 1 sui dati originali
