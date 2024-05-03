@@ -56,6 +56,7 @@ class Decoder(nn.Module):
         
   def forward(self, z, h):
     print("Hidden state: ", h.size())
+    print("Z_reparametrized: ", z.size())
     batch = z.size()[1]
     n_feats = z.size()[2]
     #print("Input D: ", z.size())
