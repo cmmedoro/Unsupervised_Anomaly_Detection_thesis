@@ -144,7 +144,7 @@ if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     np.save('/content/checkpoints/history_vae.npy', history_to_save) #/content/checkpoints er prove su drive
 else:
     np.save('/content/checkpoints/history_vae.npy', history)
-np.save('content/checkpoints/train_recos.npy', train_recos)
+np.save('/content/checkpoints/train_recos.npy', train_recos)
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 if model_type.startswith("usad"):
