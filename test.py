@@ -78,14 +78,17 @@ print(train.columns)
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 train_window = args.train_window
 X_train, y_train = create_train_eval_sequences(train, train_window)
-X_val, y_val = create_train_eval_sequences(val, train_window)
+
 
 if args.do_test:
     # Overlapping windows
     X_test, y_test = create_train_eval_sequences(test, train_window)
+    X_val, y_val = create_train_eval_sequences(val, train_window)
 else:
     # Non-overlapping windows
     X_test, y_test = create_test_sequences(test, train_window)
+    X_val, y_val = create_test_sequences(val, train_window)
+    print(X_test.shape, y_test.shape)
 
 BATCH_SIZE =  args.batch_size
 N_EPOCHS = args.epochs
