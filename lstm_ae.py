@@ -69,8 +69,8 @@ class LstmAE(nn.Module):
     epoch_loss = torch.stack(batch_losses).mean()
     return {'val_loss': epoch_loss.item()}"""
     
-  def epoch_end(self, epoch, result):
-    print("Epoch [{}], val_loss: {:.4f}".format(epoch, result))
+  def epoch_end(self, epoch, result, result_train):
+    print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}".format(epoch, result_train, result))
     
 def evaluate(model, val_loader, criterion, n):
     batch_loss = []
@@ -98,7 +98,9 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             
             
         result= evaluate(model, val_loader, criterion, epoch+1)
-        model.epoch_end(epoch, result)
+        result_train = evaluate(model, train_loader, criterion, epoch+1)
+        model.epoch_end(epoch, result, result_train)
+        #model.epoch_end(epoch, result)
         history.append(result)
     return history 
     
