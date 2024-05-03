@@ -29,8 +29,8 @@ class Encoder(nn.Module):
   def forward(self, w):
     #print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    #print("Z: ", z.size())
-    #print("H: ", h_n.size())
+    print("Z: ", z.size())
+    print("H: ", h_n.size())
     # Prova con h_n al posto di z 
     #mu = self.mean(h_n)
     #print("Mu: ", mu.size())
@@ -55,6 +55,7 @@ class Decoder(nn.Module):
     self.output_layer = nn.Linear(latent_size, out_size)
         
   def forward(self, z, h):
+    print("Hidden state: ", h.size())
     batch = z.size()[1]
     n_feats = z.size()[2]
     #print("Input D: ", z.size())
