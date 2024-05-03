@@ -148,6 +148,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     criterion = nn.MSELoss().to(device)
     train_recos = []
     for epoch in range(epochs):
+        print("Epoch: ", epoch)
         for [batch] in train_loader:
             batch=to_device(batch,device)
 
