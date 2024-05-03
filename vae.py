@@ -67,7 +67,7 @@ class Decoder(nn.Module):
     input = z.repeat(1, self.window)
     #print(input.size())
     input = input.reshape((batch, self.window, self.latent_size))
-    #print(input.size())
+    print(input.size(), h.size())
     w, (h_n, c_n) = self.lstm(input, h)
     #print("Out D: ", w.size())
     out = self.output_layer(w)
