@@ -60,6 +60,7 @@ class Decoder(nn.Module):
     n_feats = z.size()[2]
     #print("Input D: ", z.size())
     z = z.reshape((batch, n_feats))
+    h = h.reshape((batch, n_feats))
     #print("Reshaped input: ", z.size())
     #input = z.reshape((batch, self.latent_size))
     input = z.repeat(1, self.window)
