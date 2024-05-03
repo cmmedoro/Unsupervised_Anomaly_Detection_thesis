@@ -111,7 +111,7 @@ class LstmVAE(nn.Module):
     #print("Regularization loss: ", loss_2.size())
     #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
     loss = loss_1 + loss_2
-    return loss
+    return loss, w
 
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
@@ -127,8 +127,8 @@ class LstmVAE(nn.Module):
         loss = loss_1 + loss_2#torch.mean((batch-w)**2) #loss = mse
     return loss
     
-  def epoch_end(self, epoch, result):
-    print("Epoch [{}], val_loss: {:.4f}".format(epoch, result))
+  def epoch_end(self, epoch, result, result_train):
+    print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}".format(epoch, result_train, result))
     
 def evaluate(model, val_loader, criterion, n):
     batch_loss = []
@@ -146,20 +146,22 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     # Setup loss function
     criterion = nn.MSELoss().to(device)
+    train_recos = []
     for epoch in range(epochs):
         for [batch] in train_loader:
             batch=to_device(batch,device)
 
-            loss = model.training_step(batch, criterion, epoch+1)
+            loss, train_reco = model.training_step(batch, criterion, epoch+1)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            
+            train_recos.append(train_reco)
             
         result= evaluate(model, val_loader, criterion, epoch+1)
-        model.epoch_end(epoch, result)
-        history.append(result)
-    return history 
+        result_train = evaluate(model, train_loader, criterion, epoch+1)
+        model.epoch_end(epoch, result, result_train)
+        history.append(result_train) #result
+    return history, train_recos
     
 def testing(model, test_loader):
     results=[]
