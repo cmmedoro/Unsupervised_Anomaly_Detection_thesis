@@ -53,8 +53,6 @@ class LstmAE(nn.Module):
     z = self.encoder(batch)
     w = self.decoder(z)
     loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
-    print("Loss: ", loss.size())
-    print(loss)
     return loss
 
   def validation_step(self, batch, criterion, n):
