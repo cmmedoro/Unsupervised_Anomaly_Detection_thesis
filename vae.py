@@ -69,8 +69,8 @@ class LstmVAE(nn.Module):
         return z
 
   def regularization_loss(self, mu, logvar):
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
-        #kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())
+        #kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
+        kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim = 1)
         return kld_loss
   
   def training_step(self, batch, criterion, n):
@@ -81,10 +81,12 @@ class LstmVAE(nn.Module):
     w = self.decoder(z_hat, (h, h))
     loss_1 = criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
+    loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
     kld_weight = 0#0.015 
     print("Reconstruction loss: ", loss_1)
     print(type(loss_1))
     print("Regularization loss: ", loss_2)
+    print("Loss", loss_3)
     #print("Reconstruction loss: ", loss_1.size())
     #print("Regularization loss: ", loss_2.size())
     #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
