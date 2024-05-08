@@ -154,11 +154,12 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         tr_rec = []
         for [batch] in train_loader:
             batch=to_device(batch,device)
+            optimizer.zero_grad()
 
             loss, train_reco = model.training_step(batch, criterion, epoch+1)
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
+            
             tr_rec.append(train_reco)
 
         train_recos.append(tr_rec) 
