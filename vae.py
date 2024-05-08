@@ -151,6 +151,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     train_recos = []
     for epoch in range(epochs):
         print("Epoch: ", epoch)
+        tr_rec = []
         for [batch] in train_loader:
             batch=to_device(batch,device)
 
@@ -158,8 +159,9 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            train_recos.append(train_reco)
-            
+            tr_rec.append(train_reco)
+
+        train_recos.append(tr_rec) 
         result= evaluate(model, val_loader, criterion, epoch+1)
         result_train = evaluate(model, train_loader, criterion, epoch+1)
         model.epoch_end(epoch, result, result_train)
