@@ -80,7 +80,7 @@ class LstmVAE(nn.Module):
     w = self.decoder(z_hat, (h, h))
     loss_1 = criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
-    kld_weight = 0.00025 
+    kld_weight = 0.025 
     #print("Reconstruction loss: ",loss_1.size())
     #print("Regularization loss: ", loss_2.size())
     #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse

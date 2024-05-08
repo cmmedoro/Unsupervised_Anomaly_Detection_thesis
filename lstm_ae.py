@@ -88,11 +88,12 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     for epoch in range(epochs):
         for [batch] in train_loader:
             batch=to_device(batch,device)
+            optimizer.zero_grad()
 
             loss = model.training_step(batch, criterion, epoch+1)
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
+            #optimizer.zero_grad()
             
             
         result= evaluate(model, val_loader, criterion, epoch+1)
