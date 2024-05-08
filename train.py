@@ -144,7 +144,7 @@ if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     #train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
     # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
     np.save('/content/checkpoints/history_vae.npy', history_to_save) #/content/checkpoints er prove su drive
-    np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
+    #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 else:
     np.save('/content/checkpoints/history_vae.npy', history)
     
