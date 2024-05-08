@@ -15,30 +15,11 @@ class Encoder(nn.Module):
     self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
-    #self.mean = nn.Linear(latent_size, latent_dim)
-    #self.log_var = nn.Linear(latent_size, latent_dim)
-
-  #def reparametrize(self, mu, logvar):
-   #     std = torch.exp(0.5 * logvar)
-    #    noise = torch.randn_like(std)
-     #   noise = to_device(noise, device)
-
-      #  z = mu + noise * std
-       # return z
 
   def forward(self, w):
     #print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    #print("Z: ", z.size())
-    #print("H: ", h_n.size())
-    # Prova con h_n al posto di z 
-    #mu = self.mean(h_n)
-    #print("Mu: ", mu.size())
-    #logvar = self.log_var(h_n)
-    #print("Var: ", logvar.size())
-    #z_reparam = self.reparametrize(mu, logvar)
-    #print("Z_reparametrized: ", z_reparam.size())
-    return h_n#, z_reparam, mu, logvar
+    return h_n
     
 class Decoder(nn.Module):
   def __init__(self, latent_size, out_size, train_window): 
@@ -61,14 +42,10 @@ class Decoder(nn.Module):
     n_feats = z.size()[2]
     #print("Input D: ", z.size())
     z = z.reshape((batch, n_feats))
-    #h = h.reshape((batch, n_feats))
-    #print("Reshaped input: ", z.size())
-    #input = z.reshape((batch, self.latent_size))
     input = z.repeat(1, self.window)
     #print(input.size())
     input = input.reshape((batch, self.window, self.latent_size))
     #print(input.size(), h.size())
-    #print(h.dim())
     w, (h_n, c_n) = self.lstm(input, h)
     #print("Out D: ", w.size())
     out = self.output_layer(w)
@@ -92,10 +69,6 @@ class LstmVAE(nn.Module):
         return z
 
   def regularization_loss(self, mu, logvar):
-
-        #kld_loss = torch.mean(
-        #    -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0
-        #)
         kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())
         return kld_loss
   
@@ -123,9 +96,7 @@ class LstmVAE(nn.Module):
         w = self.decoder(z_hat, (h, h))
         loss_1 = criterion(w, batch)
         loss_2 = self.regularization_loss(mu, logvar)
-        kld_weight = 0.00025 
-        #print("Reconstruction loss: ",loss_1.size())
-        #print("Regularization loss: ", loss_2.size())
+        kld_weight = 0.025 
         loss = loss_1 + loss_2 * kld_weight#torch.mean((batch-w)**2) #loss = mse
     return loss
     
