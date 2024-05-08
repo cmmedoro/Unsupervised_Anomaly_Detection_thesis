@@ -40,7 +40,7 @@ class Decoder(nn.Module):
     return w
     
 class LinearVAE(nn.Module):
-  def __init__(self, input_dim, latent_size, train_window): 
+  def __init__(self, input_dim, latent_size): 
     super().__init__()
     self.encoder = Encoder(input_dim, latent_size)
     self.decoder = Decoder(latent_size, input_dim)
@@ -103,7 +103,7 @@ def evaluate(model, val_loader, criterion, n):
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
     history = []
-    optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
+    optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()), lr = 0.0001)
     # Setup loss function
     criterion = nn.MSELoss().to(device)
     train_recos = []
