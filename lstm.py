@@ -19,11 +19,11 @@ class LstmModel(nn.Module):
   def forward(self, w):
     #print("Input: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    print("Output 1: ", h_n.size())
-    print("Output 2: ", z.size())
+    #print("Output 1: ", h_n.size())
+    #print("Output 2: ", z.size())
     _, dim2, dim3 = h_n.size()
     output = self.fc(h_n.reshape(dim2, dim3))
-    print("Output 3: ", output.size())
+    #print("Output 3: ", output.size())
     return output
   
   def training_step(self, batch, criterion, n):
