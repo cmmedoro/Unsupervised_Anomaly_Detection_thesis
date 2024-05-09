@@ -15,6 +15,7 @@ class LstmModel(nn.Module):
     self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
+    self.relu = nn.ReLU(True)
     self.fc = nn.Linear(latent_size, 1)
   def forward(self, w):
     #print("Input: ", w.size())
@@ -23,7 +24,9 @@ class LstmModel(nn.Module):
     #print("Output 2: ", z.size())
     _, dim2, dim3 = h_n.size()
     print(z[:,-1, :].size())
-    output = self.fc(z[:, -1, :]) #h_n.reshape(dim2, dim3)
+    forecast = z[:, -1, :]
+    forecast = self.relu(forecast)
+    output = self.fc(forecast) #h_n.reshape(dim2, dim3)
     #print("Output 3: ", output.size())
     return output
   
