@@ -50,6 +50,7 @@ def evaluate(model, val_loader, criterion, n):
     batch_loss = []
     for X_batch, y_batch in val_loader:
        X_batch = to_device(X_batch, device)
+       y_batch = to_device(y_batch, device)
        loss = model.validation_step(X_batch, y_batch, criterion, n) 
        batch_loss.append(loss)
 
@@ -90,6 +91,7 @@ def testing(model, test_loader):
     with torch.no_grad():
         for X_batch, y_batch in test_loader: 
             X_batch=to_device(X_batch,device)
+            y_batch = to_device(y_batch, device)
             w=model(X_batch)
             results.append(criterion(w, y_batch))
             #results.append(torch.mean((batch-w)**2,axis=1))
