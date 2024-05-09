@@ -131,8 +131,8 @@ batch, window_len, n_channels = X_train.shape
 w_size = X_train.shape[1] * X_train.shape[2]
 z_size = int(w_size * hidden_size) 
 
-train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train)), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val), torch.from_numpy(y_val)), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(y_train).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float(), torch.from_numpy(y_val).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 #train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], X_train.shape[1], X_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 #labels_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.torch.from_numpy(y_train).float().view(([y_train.shape[0], y_train.shape[1], y_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
