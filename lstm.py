@@ -21,7 +21,7 @@ class LstmModel(nn.Module):
     z, (h_n, c_n) = self.lstm(w)
     print("Output 1: ", h_n.size())
     print("Output 2: ", z.size())
-    output = self.fc(h_n)
+    output = self.fc(z)
     print("Output 3: ", output.size())
     return output
   
