@@ -27,15 +27,15 @@ class LstmModel(nn.Module):
   
   def training_step(self, batch, criterion, n):
     z = self(batch)
-    #print("Z: ", z.size())
-    #print("Batch: ", batch.size())
+    print("Z: ", z)
+    print("Batch: ", batch)
     loss = criterion(z, batch)#torch.mean((batch-w)**2) #loss = mse
     return loss
 
-  def validation_step(self, batch, criterion, n):
+  def validation_step(self, batch, y, criterion, n):
     with torch.no_grad():
         z = self(batch)
-        loss = criterion(z, batch)#torch.mean((batch-w)**2) #loss = mse
+        loss = criterion(z, y)#torch.mean((batch-w)**2) #loss = mse
     return loss
         
   """def validation_epoch_end(self, outputs):
@@ -48,9 +48,9 @@ class LstmModel(nn.Module):
     
 def evaluate(model, val_loader, criterion, n):
     batch_loss = []
-    for [batch] in val_loader:
-       batch = to_device(batch, device)
-       loss = model.validation_step(batch, criterion, n) 
+    for X_batch, y_batch in val_loader:
+       X_batch = to_device(X_batch, device)
+       loss = model.validation_step(X_batch, y_batch, criterion, n) 
        batch_loss.append(loss)
 
     epoch_loss = torch.stack(batch_loss).mean()
@@ -62,11 +62,15 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     optimizer = opt_func(model.parameters())
     criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
     for epoch in range(epochs):
-        for [batch] in train_loader:
-            batch=to_device(batch,device)
+        model.train()
+        for X_batch, y_batch in train_loader:
+            X_batch=to_device(X_batch,device)
+            y_batch = to_device(y_batch, device)
             optimizer.zero_grad()
-
-            loss = model.training_step(batch, criterion, epoch+1)
+            z = model(X_batch)
+            print("Z: ", z)
+            print("X_batch: ", X_batch)
+            loss = criterion(z, y_batch)#torch.mean((batch-w)**2) #loss = mse
             loss.backward()
             optimizer.step()
             #optimizer.zero_grad()
@@ -81,13 +85,13 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     
 def testing(model, test_loader):
     results=[]
-    reconstruction = []
+    forecast = []
     criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device)
     with torch.no_grad():
-        for [batch] in test_loader: 
-            batch=to_device(batch,device)
-            w=model(batch)
-            results.append(criterion(w, batch))
+        for X_batch, y_batch in test_loader: 
+            X_batch=to_device(X_batch,device)
+            w=model(X_batch)
+            results.append(criterion(w, y_batch))
             #results.append(torch.mean((batch-w)**2,axis=1))
-            reconstruction.append(w)
-    return results, reconstruction
+            forecast.append(w)
+    return results, forecast

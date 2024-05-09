@@ -103,6 +103,9 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
             break
         # gather input and output parts of the pattern
         seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
+        # In seq_x we store the data for the window
+        # In seq_y we store the meter_reading corresponding to the following data point in the sequence. This is the ground truth
+        # we are going to use to compare the predictions made by the model
         output.append(seq_x)
         output2.append(seq_y)
   return np.stack(output), np.stack(output2)
@@ -128,8 +131,11 @@ batch, window_len, n_channels = X_train.shape
 w_size = X_train.shape[1] * X_train.shape[2]
 z_size = int(w_size * hidden_size) 
 
-train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], X_train.shape[1], X_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train)), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val), torch.from_numpy(y_val)), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+#train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], X_train.shape[1], X_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+#labels_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.torch.from_numpy(y_train).float().view(([y_train.shape[0], y_train.shape[1], y_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+#val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
 model = LstmModel(n_channels, 32)
 

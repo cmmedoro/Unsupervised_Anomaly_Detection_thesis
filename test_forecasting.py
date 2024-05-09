@@ -123,8 +123,11 @@ z_size = int(w_size * hidden_size)
 w_size, z_size
 
 
-val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0], X_val.shape[1], X_val.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],X_test.shape[1], X_test.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+#val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0], X_val.shape[1], X_val.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+#test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],X_test.shape[1], X_test.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+
+val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val), torch.from_numpy(y_val)), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test), torch.from_numpy(y_test)), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 
 z_size = 32
 # Create the model and send it on the gpu device
