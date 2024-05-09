@@ -22,7 +22,8 @@ class LstmModel(nn.Module):
     #print("Output 1: ", h_n.size())
     #print("Output 2: ", z.size())
     _, dim2, dim3 = h_n.size()
-    output = self.fc(h_n.reshape(dim2, dim3))
+    print(z[:,-1, :].size())
+    output = self.fc(z[:, -1, :].size()) #h_n.reshape(dim2, dim3)
     #print("Output 3: ", output.size())
     return output
   
