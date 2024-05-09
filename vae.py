@@ -83,9 +83,9 @@ class LstmVAE(nn.Module):
     loss_2 = self.regularization_loss(mu, logvar)
     #loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
     kld_weight = 0.015 
-    print("Reconstruction loss: ", loss_1)
-    print(type(loss_1))
-    print("Regularization loss: ", loss_2)
+    #print("Reconstruction loss: ", loss_1)
+    #print(type(loss_1))
+    #print("Regularization loss: ", loss_2)
     #print("Loss", loss_3)
     #print("Reconstruction loss: ", loss_1.size())
     #print("Regularization loss: ", loss_2.size())
