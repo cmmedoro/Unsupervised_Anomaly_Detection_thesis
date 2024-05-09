@@ -23,7 +23,7 @@ class LstmModel(nn.Module):
     #print("Output 1: ", h_n.size())
     #print("Output 2: ", z.size())
     _, dim2, dim3 = h_n.size()
-    print(z[:,-1, :].size())
+    #print(z[:,-1, :].size())
     forecast = z[:, -1, :]
     forecast = self.relu(forecast)
     output = self.fc(forecast) #h_n.reshape(dim2, dim3)
