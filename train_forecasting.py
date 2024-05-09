@@ -26,7 +26,7 @@ device = get_default_device()
 # Original dataset
 #ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu
 #energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-energy_df = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/train_features.csv")
+energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature']]
 
@@ -54,7 +54,7 @@ if args.do_resid:
     # Residuals dataset (missing values and dates imputation already performed)
     #residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     # ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu
-    residuals = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/residuals.csv")
+    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
@@ -62,7 +62,7 @@ if args.do_resid:
     test = pd.concat(dfs_test.values())
 print(train.columns)
 if args.do_multivariate:
-    residuals = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/residuals.csv")
+    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
