@@ -19,10 +19,11 @@ class LstmModel(nn.Module):
   def forward(self, w):
     #print("Input: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    #print("Output 1: ", h_n.size())
-    #print("Output 2: ", z.size())
-    output = self.fc(z)
-    #print("Output 3: ", output.size())
+    print("Output 1: ", h_n.size())
+    print("Output 2: ", z.size())
+    _, dim2, dim3 = h_n.size()
+    output = self.fc(h_n.reshape(dim2, dim3))
+    print("Output 3: ", output.size())
     return output
   
   def training_step(self, batch, criterion, n):
@@ -37,11 +38,6 @@ class LstmModel(nn.Module):
         z = self(batch)
         loss = criterion(z, y)#torch.mean((batch-w)**2) #loss = mse
     return loss
-        
-  """def validation_epoch_end(self, outputs):
-    batch_losses = [x for x in outputs]
-    epoch_loss = torch.stack(batch_losses).mean()
-    return {'val_loss': epoch_loss.item()}"""
     
   def epoch_end(self, epoch, result, result_train):
     print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}".format(epoch, result_train, result))
@@ -65,13 +61,13 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     for epoch in range(epochs):
         model.train()
         for X_batch, y_batch in train_loader:
-            X_batch=to_device(X_batch,device)
+            X_batch = to_device(X_batch,device)
             y_batch = to_device(y_batch, device)
             optimizer.zero_grad()
             z = model(X_batch)
             #print("Z: ", z)
             #print("X_batch: ", X_batch)
-            loss = criterion(z, y_batch)#torch.mean((batch-w)**2) #loss = mse
+            loss = criterion(z, y_batch)
             loss.backward()
             optimizer.step()
             #optimizer.zero_grad()
