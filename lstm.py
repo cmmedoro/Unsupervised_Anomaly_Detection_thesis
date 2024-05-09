@@ -15,7 +15,7 @@ class LstmModel(nn.Module):
     self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
-    self.relu = nn.ReLU(True)
+    self.relu = nn.ReLU()
     self.fc = nn.Linear(latent_size, 1)
   def forward(self, w):
     #print("Input: ", w.size())
