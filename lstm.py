@@ -17,14 +17,18 @@ class LstmModel(nn.Module):
         )
     self.fc = nn.Linear(latent_size, 1)
   def forward(self, w):
-    #print("Input E: ", w.size())
+    print("Input: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    #print("Output E: ", h_n.size())
+    print("Output 1: ", h_n.size())
+    print("Output 2: ", z.size())
     output = self.fc(h_n)
+    print("Output 3: ", output.size())
     return output
   
   def training_step(self, batch, criterion, n):
     z = self(batch)
+    print("Z: ", z.size())
+    print("Batch: ", batch.size())
     loss = criterion(z, batch)#torch.mean((batch-w)**2) #loss = mse
     return loss
 
