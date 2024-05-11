@@ -1,8 +1,11 @@
 import torch
 import torch.nn as nn
+from typing import Dict, List, Tuple
+from tqdm.auto import tqdm
 
 from utils_ae import *
 device = get_default_device()
+
 
 class LstmModel(nn.Module):
   def __init__(self, in_size, latent_size): 
@@ -17,35 +20,29 @@ class LstmModel(nn.Module):
         )
     self.relu = nn.ReLU()
     self.fc = nn.Linear(latent_size, 1)
+    
   def forward(self, w):
     #print("Input: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    #print("Output 1: ", h_n.size())
-    #print("Output 2: ", z.size())
-    _, dim2, dim3 = h_n.size()
     #print(z[:,-1, :].size())
     forecast = z[:, -1, :]
     forecast = self.relu(forecast)
-    output = self.fc(forecast) #h_n.reshape(dim2, dim3)
+    output = self.fc(forecast)
     #print("Output 3: ", output.size())
     return output
   
-  def training_step(self, batch, criterion, n):
-    z = self(batch)
-    print("Z: ", z)
-    print("Batch: ", batch)
-    loss = criterion(z, batch)#torch.mean((batch-w)**2) #loss = mse
-    return loss
-
+  
+  """
   def validation_step(self, batch, y, criterion, n):
     with torch.no_grad():
         z = self(batch)
         loss = criterion(z, y)#torch.mean((batch-w)**2) #loss = mse
-    return loss
+    return loss"""
     
   def epoch_end(self, epoch, result, result_train):
     print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}".format(epoch, result_train, result))
-    
+
+"""   
 def evaluate(model, val_loader, criterion, n):
     batch_loss = []
     for X_batch, y_batch in val_loader:
@@ -56,30 +53,47 @@ def evaluate(model, val_loader, criterion, n):
 
     epoch_loss = torch.stack(batch_loss).mean()
     return epoch_loss
+"""
 
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
     history = []
     optimizer = opt_func(model.parameters())
-    criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
+    criterion = nn.MSELoss().to(device) 
     for epoch in range(epochs):
         model.train()
+        train_loss = []
         for X_batch, y_batch in train_loader:
             X_batch = to_device(X_batch,device)
             y_batch = to_device(y_batch, device)
-            optimizer.zero_grad()
+            
             z = model(X_batch)
-            #print("Z: ", z)
-            #print("X_batch: ", X_batch)
             loss = criterion(z, y_batch)
+            train_loss.append(loss)
+
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            #optimizer.zero_grad()
+        result_train = torch.stack(train_loss).mean()
             
-            
-        result= evaluate(model, val_loader, criterion, epoch+1)
-        result_train = evaluate(model, train_loader, criterion, epoch+1)
-        model.epoch_end(epoch, result, result_train)
+        #result = evaluate(model, val_loader, criterion, epoch+1)
+        model.eval()
+        batch_loss = []
+        for X_batch, y_batch in val_loader:
+          X_batch = to_device(X_batch, device)
+          y_batch = to_device(y_batch, device)
+          with torch.no_grad():
+            z = model(X_batch)
+            loss = criterion(z, y_batch)
+          #loss = model.validation_step(X_batch, y_batch, criterion, n) 
+          batch_loss.append(loss)
+
+        result = torch.stack(batch_loss).mean()
+
+
+        #result_train = evaluate(model, train_loader, criterion, epoch+1)
+        #model.epoch_end(epoch, result, result_train)
+        print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}".format(epoch, result_train, result))
         #model.epoch_end(epoch, result)
         history.append(result)
     return history 
