@@ -169,6 +169,7 @@ if args.do_reconstruction:
     weight_overall = args.weights_overall
 
     predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
+    #print(predicted_df_test)
 
     #scaler = MinMaxScaler(feature_range=(0,1))
     #dfs_dict_1 = {}
@@ -197,6 +198,7 @@ if args.do_reconstruction:
 
     predicted_df_test.index.names=['timestamp']
     predicted_df_test= predicted_df_test.reset_index()
+    predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
 
     predicted_df_test = pd.merge(predicted_df_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
 
@@ -240,8 +242,7 @@ elif args.do_test:
 
     y_test = [1.0 if (np.sum(window) > 0) else 0 for window in windows_labels ]
 
-    y_pred=np.concatenate([torch.stack(results[:-1]).flatten().detach().cpu().numpy(),
-                              results[-1].flatten().detach().cpu().numpy()])
+    y_pred=np.concatenate([torch.stack(results[:-1]).flatten().detach().cpu().numpy(), results[-1].flatten().detach().cpu().numpy()])
     
     threshold=ROC(y_test,y_pred)
     y_pred_ = np.zeros(y_pred.shape[0])
