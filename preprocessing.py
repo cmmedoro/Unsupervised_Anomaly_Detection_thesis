@@ -63,8 +63,9 @@ def cos_transformer(period):
   return FunctionTransformer(lambda x: np.cos(x/period*2*np.pi))
 
 def add_trigonometric_features(dataframe):
-  dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
-  dataframe['weekday']=dataframe['timestamp'].dt.weekday
+  #dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
+  #dataframe['weekday']=dataframe['timestamp'].dt.weekday
+  dataframe['weekdat'] = dataframe.index.weekday
   dataframe['weekday_y']=sin_transformer(7).fit_transform(dataframe['weekday'])
   dataframe['weekday_x']=cos_transformer(7).fit_transform(dataframe['weekday'])
   return dataframe
@@ -104,6 +105,7 @@ def impute_missing_dates(dataframe):
   Take first and last timestamp available. Create a new index starting from these two values, making sure that the index is 
   sampled with 1 hour jump. Use ffill to impute the missing values for the dates newly created.
   """
+  dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
   dataframe = dataframe.set_index(['timestamp'])
   start_ts = min(dataframe.index)
   end_ts = max(dataframe.index)

@@ -44,34 +44,34 @@ device = get_default_device()
 
 #### Open the dataset ####
 # Original dataset
-#energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
+energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
+#energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly']]
 
 ### PREPROCESSING ###
 # 1) Impute missing values
 imputed_df = impute_nulls(df)
-# 2) Add trigonometric features
-df = add_trigonometric_features(imputed_df)
-
-# 3) Resample the dataset: measurement frequency = "1h"
-dfs_dict = impute_missing_dates(df)
+# 2) Resample the dataset: measurement frequency = "1h"
+dfs_dict = impute_missing_dates(imputed_df)
 df1 = pd.concat(dfs_dict.values())
+# 3) Add trigonometric features
+df2 = add_trigonometric_features(df1)
+
 lags = [1, -1]
-df1 = create_diff_lag_features(df1, lags)
+df2 = create_diff_lag_features(df2, lags)
 
 # Split the dataset into train, validation and test
-dfs_train, dfs_val, dfs_test = train_val_test_split(df1)
+dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
 train = pd.concat(dfs_train.values())
 val = pd.concat(dfs_val.values())
 test = pd.concat(dfs_test.values())
 
 if args.do_resid:
     # Residuals dataset (missing values and dates imputation already performed)
-    #residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
+    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     # ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu
-    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
+    #residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
@@ -79,7 +79,7 @@ if args.do_resid:
     test = pd.concat(dfs_test.values())
 print(train.columns)
 if args.do_multivariate:
-    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
+    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
     lags = [1, -1]
     residui_df = create_diff_lag_features(residui_df, lags)
@@ -143,10 +143,10 @@ if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     train_recos_to_save = np.concatenate([torch.stack(train_recos[:-1]).flatten().detach().cpu().numpy(), train_recos[-1].flatten().detach().cpu().numpy()])
     #train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
     # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
-    np.save('/content/checkpoints/history_vae.npy', history_to_save) #/content/checkpoints er prove su drive
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_ae_2.npy', history_to_save) #/content/checkpoints er prove su drive
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 else:
-    np.save('/content/checkpoints/history_vae.npy', history)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_ae_2.npy', history)
     
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir

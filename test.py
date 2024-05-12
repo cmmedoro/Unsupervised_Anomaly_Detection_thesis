@@ -43,30 +43,31 @@ elif model_type == "vae":
 device = get_default_device()
 
 #### Open the dataset ####
-#energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
+energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
+#energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly']]
 
 ### PREPROCESSING ###
 # 1) Impute missing values
 imputed_df = impute_nulls(df)
-# 2) Add trigonometric features
-df = add_trigonometric_features(imputed_df)
-# 3) Resample the dataset: measurement frequency = "1h"
-dfs_dict = impute_missing_dates(df)
+
+# 2) Resample the dataset: measurement frequency = "1h"
+dfs_dict = impute_missing_dates(imputed_df)
 df1 = pd.concat(dfs_dict.values())
+# 3) Add trigonometric features
+df2 = add_trigonometric_features(df1) #
 
 # Split the dataset into train, validation and test
-dfs_train, dfs_val, dfs_test = train_val_test_split(df1)
+dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
 train = pd.concat(dfs_train.values())
 val = pd.concat(dfs_val.values())
 test = pd.concat(dfs_test.values())
 
 if args.do_resid:
     # Residuals dataset (missing values and dates imputation already performed)
-    #residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
-    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
+    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
+    #residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
