@@ -65,7 +65,7 @@ def cos_transformer(period):
 def add_trigonometric_features(dataframe):
   #dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
   #dataframe['weekday']=dataframe['timestamp'].dt.weekday
-  dataframe['weekdat'] = dataframe.index.weekday
+  dataframe['weekday'] = dataframe.index.weekday
   dataframe['weekday_y']=sin_transformer(7).fit_transform(dataframe['weekday'])
   dataframe['weekday_x']=cos_transformer(7).fit_transform(dataframe['weekday'])
   return dataframe
