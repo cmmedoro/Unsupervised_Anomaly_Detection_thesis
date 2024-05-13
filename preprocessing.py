@@ -197,8 +197,9 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'diff_lag_1', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'diff_lag_1', 'resid']])
-      building_data = np.array(gdf[['meter_reading', 'diff_lag_1', 'resid']]).astype(float) 
+      #'building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature'
+      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']])
+      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y']]).astype(float) 
       for i in range(len(building_data) - time_steps + 1):
         # find the end of this sequence
         end_ix = i + time_steps
@@ -230,9 +231,9 @@ def create_multivariate_test_sequences(dataframe, time_steps):
     output = []
     output2 = []
     for building_id, gdf in dataframe.groupby("building_id"):
-       gdf[['meter_reading', 'diff_lag_1', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'diff_lag_1', 'resid']])
-       building_data = np.array(gdf[['meter_reading', 'diff_lag_1', 'resid']]).astype(float) 
-       for i in range(0, len(building_data) - time_steps + 1, time_steps):
+      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']])
+      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y']]).astype(float) 
+      for i in range(0, len(building_data) - time_steps + 1, time_steps):
         end_ix = i + time_steps
         #if end_ix > len(gdf):
           #break
