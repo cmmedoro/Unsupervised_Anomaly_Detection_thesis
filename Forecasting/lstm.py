@@ -94,7 +94,7 @@ def testing(model, test_loader):
             X_batch=to_device(X_batch,device)
             y_batch = to_device(y_batch, device)
             w=model(X_batch)
-            results.append(criterion(w.squeeze(), y_batch))
-            #results.append(torch.mean((batch-w)**2,axis=1))
+            #results.append(criterion(w.squeeze(), y_batch))
+            results.append(torch.mean((y_batch-w.squeeze())**2,axis=1))
             forecast.append(w)
     return results, forecast

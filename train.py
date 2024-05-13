@@ -90,6 +90,7 @@ if args.do_multivariate:
 
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
+#### CAMBIA LE FEATURES DA TENERE IN CASO MULTIVARIATO
 train_window = args.train_window
 if args.do_multivariate:
     X_train, y_train = create_multivariate_train_eval_sequences(train, train_window)
