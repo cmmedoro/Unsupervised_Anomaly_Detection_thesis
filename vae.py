@@ -80,20 +80,20 @@ class LstmVAE(nn.Module):
   
   def training_step(self, batch, criterion, n):
     h = self.encoder(batch) #, z_hat, mu, logvar
-    batch = h.size()[1]
+    batch_1 = h.size()[1]
     n_feats = h.size()[2]
     #print("Input D: ", z.size())
-    h = h.reshape((batch, n_feats))
+    h = h.reshape((batch_1, n_feats))
     mu = self.mean(h)
     logvar = self.log_var(h)
     #print("MU:", mu.size())
     #print(logvar.size())
     z_hat = self.reparametrize(mu, logvar)
-    print("Z_reparametrized: ", z_hat.size())
+    #print("Z_reparametrized: ", z_hat.size())
     w = self.decoder(z_hat, (h, h))
-    print("Output D: ", w.size())
-    print("Batch type: ", type(batch))
-    print("Batch: ", batch.size())
+    #print("Output D: ", w.size())
+    #print("Batch type: ", type(batch))
+    #print("Batch: ", batch.size())
     loss_1 = criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
     #loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
