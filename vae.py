@@ -17,10 +17,10 @@ class Encoder(nn.Module):
         )
 
   def forward(self, w):
-    print("Input E: ", w.size())
+    #print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    print("Z: ", z.size())
-    print("H_n: ", h_n.size())
+    #print("Z: ", z.size())
+    #print("H_n: ", h_n.size())
     return h_n
     
 class Decoder(nn.Module):
@@ -86,12 +86,12 @@ class LstmVAE(nn.Module):
     h = h.reshape((batch, n_feats))
     mu = self.mean(h)
     logvar = self.log_var(h)
-    print("MU:", mu.size())
-    print(logvar.size())
+    #print("MU:", mu.size())
+    #print(logvar.size())
     z_hat = self.reparametrize(mu, logvar)
-    print(z_hat.size())
+    #print(z_hat.size())
     w = self.decoder(z_hat, (h, h))
-    loss_1 = torch.mean((batch-w)**2)#criterion(w, batch)
+    loss_1 = criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
     #loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
     kld_weight = 0.015 
@@ -117,7 +117,8 @@ class LstmVAE(nn.Module):
         logvar = self.log_var(h)
         z_hat = self.reparametrize(mu, logvar)
         w = self.decoder(z_hat, (h, h))
-        loss_1 = torch.mean((batch-w)**2)#criterion(w, batch)
+        print("Output D: ", w.size())
+        loss_1 = criterion(w, batch) # torch.mean((batch-w)**2)
         loss_2 = self.regularization_loss(mu, logvar)
         kld_weight = 0.015 
         loss = loss_1 + loss_2 * kld_weight#torch.mean((batch-w)**2) #loss = mse
