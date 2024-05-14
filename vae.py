@@ -73,9 +73,6 @@ class LstmVAE(nn.Module):
 
   def regularization_loss(self, mu, logvar):
         kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim = 1)
-        #kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
-        #print(kld_loss)
-        #kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())
         return kld_loss
   
   def training_step(self, batch, criterion, n):
@@ -86,10 +83,10 @@ class LstmVAE(nn.Module):
     h = h.reshape((batch_1, n_feats))
     mu = self.mean(h)
     logvar = self.log_var(h)
-    #print("MU:", mu.size())
-    #print(logvar.size())
+    print("MU:", mu.size())
+    print(logvar.size())
     z_hat = self.reparametrize(mu, logvar)
-    #print("Z_reparametrized: ", z_hat.size())
+    print("Z_reparametrized: ", z_hat.size())
     w = self.decoder(z_hat, (h, h))
     #print("Output D: ", w.size())
     #print("Batch type: ", type(batch))
@@ -154,7 +151,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.zero_grad()
 
             loss, train_reco = model.training_step(batch, criterion, epoch+1)
-            print("Loss: ", loss.mean())
+            #print("Loss: ", loss.mean())
             loss.mean().backward() #loss.mean().backward()
             optimizer.step()
             
