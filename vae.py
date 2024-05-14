@@ -88,7 +88,7 @@ class LstmVAE(nn.Module):
     z_hat = self.reparametrize(mu, logvar)
     print("Z_reparametrized: ", z_hat.size())
     w = self.decoder(z_hat, (h, h))
-    #print("Output D: ", w.size())
+    print("Output D: ", w.size())
     #print("Batch type: ", type(batch))
     #print("Batch: ", batch.size())
     loss_1 = criterion(w, batch)
@@ -146,7 +146,9 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     for epoch in range(epochs):
         #print("Epoch: ", epoch)
         tr_rec = []
+        i = 0
         for [batch] in train_loader:
+            print("Batch: ", i)
             batch=to_device(batch,device)
             optimizer.zero_grad()
 
@@ -156,6 +158,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.step()
             
             tr_rec.append(train_reco)
+            i = i+1
 
         train_recos.append(tr_rec) 
         result= evaluate(model, val_loader, criterion, epoch+1)
