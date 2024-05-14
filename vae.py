@@ -142,7 +142,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     history = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     # Setup loss function
-    criterion = nn.MSELoss(reduction = "sum").to(device)
+    criterion = nn.MSELoss().to(device)
     train_recos = []
     for epoch in range(epochs):
         print("Epoch: ", epoch)
