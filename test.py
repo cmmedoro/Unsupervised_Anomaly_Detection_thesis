@@ -77,6 +77,7 @@ print(train.columns)
 if args.do_multivariate:
     residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'resid']]
+    residui_df = add_trig_resid(residui_df)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -85,7 +86,7 @@ if args.do_multivariate:
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 train_window = args.train_window
-X_train, y_train = create_train_eval_sequences(train, train_window)
+#X_train, y_train = create_train_eval_sequences(train, train_window)
 
 if args.do_multivariate:
     X_train, y_train = create_multivariate_train_eval_sequences(train, train_window)
@@ -110,6 +111,9 @@ else:
     X_val, y_val = create_test_sequences(val, train_window)
     print(X_test.shape, y_test.shape)
 
+print("X_train: ", X_train.shape)
+print("X_val: ", X_val.shape)
+print("X_test: ", X_test.shape)
 BATCH_SIZE =  args.batch_size
 N_EPOCHS = args.epochs
 hidden_size = args.hidden_size

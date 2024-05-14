@@ -70,6 +70,14 @@ def add_trigonometric_features(dataframe):
   dataframe['weekday_x']=cos_transformer(7).fit_transform(dataframe['weekday'])
   return dataframe
 
+def add_trig_resid(dataframe):
+  dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
+  dataframe['weekday']=dataframe['timestamp'].dt.weekday
+  #dataframe['weekday'] = dataframe.index.weekday
+  dataframe['weekday_y']=sin_transformer(7).fit_transform(dataframe['weekday'])
+  dataframe['weekday_x']=cos_transformer(7).fit_transform(dataframe['weekday'])
+  return dataframe
+
 def create_lag_features(data_frame, list_lags):
   # Create lag features: consider the column 'meter_reading' and for each row of the dataset add the information on the previous x hours
   # This should be done by buildings: for each timeseries, meaning for each building, we need to perform this operation, which means that the first measurements are going
@@ -198,8 +206,8 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
       #'building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature'
-      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y']]).astype(float) 
+      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']])
+      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y', 'resid']]).astype(float) 
       for i in range(len(building_data) - time_steps + 1):
         # find the end of this sequence
         end_ix = i + time_steps
@@ -231,8 +239,8 @@ def create_multivariate_test_sequences(dataframe, time_steps):
     output = []
     output2 = []
     for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y']]).astype(float) 
+      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']])
+      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y', 'resid']]).astype(float) 
       for i in range(0, len(building_data) - time_steps + 1, time_steps):
         end_ix = i + time_steps
         #if end_ix > len(gdf):
