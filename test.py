@@ -95,11 +95,13 @@ else:
     X_train, y_train = create_train_eval_sequences(train, train_window)
     X_val, y_val = create_train_eval_sequences(val, train_window)
 
-if args.do_test:
+if args.do_test and not args.do_multivariate:
     # Overlapping windows
+    print("UNIV")
     X_test, y_test = create_train_eval_sequences(test, train_window)
     X_val, y_val = create_train_eval_sequences(val, train_window)
 elif args.do_test and args.do_multivariate:
+    print("MULTI")
     X_test, y_test = create_multivariate_train_eval_sequences(test, train_window)
     X_val, y_val = create_multivariate_train_eval_sequences(val, train_window)
 elif args.do_reconstruction and args.do_multivariate:
@@ -134,8 +136,8 @@ if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_con
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],X_test.shape[1], X_test.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 else:
     #train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().reshape(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().reshape(([X_test.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
 if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     z_size = 32
@@ -252,6 +254,11 @@ elif args.do_test:
         results, w, mu, logvar = testing(model, test_loader)
     else:
         results, w = testing(model,test_loader)
+
+    print(len(results))
+    print(results[0].size())
+    print(results[-1].size())
+    print(results)
 
     # Qui va ad ottenere le label per ogni finestra
     # Input modello è una lista di array, ognuno corrispondente a una sliding window con stride = 1 sui dati originali

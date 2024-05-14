@@ -69,7 +69,7 @@ class LstmVAE(nn.Module):
         return z
 
   def regularization_loss(self, mu, logvar):
-        kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())
+        kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim = 1)
         #kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
         #print(kld_loss)
         #kld_loss = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())
@@ -97,7 +97,8 @@ class LstmVAE(nn.Module):
     #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
     loss = loss_1 + loss_2 * kld_weight
     print(loss)
-    return loss, w
+    loss_final = torch.mean(loss, dim = 0)
+    return loss_final, w
 
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
@@ -130,7 +131,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     history = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     # Setup loss function
-    criterion = nn.MSELoss().to(device)
+    criterion = nn.MSELoss(reduction=None).to(device)
     train_recos = []
     for epoch in range(epochs):
         print("Epoch: ", epoch)

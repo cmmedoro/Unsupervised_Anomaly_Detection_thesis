@@ -116,8 +116,8 @@ if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_con
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], X_train.shape[1], X_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 else:
-    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().reshape(([X_train.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().reshape(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
 if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     z_size = 32
@@ -145,10 +145,10 @@ if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     #train_recos_to_save = np.concatenate([torch.stack(train_recos[:-1]).flatten().detach().cpu().numpy(), train_recos[-1].flatten().detach().cpu().numpy()])
     #train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
     # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_ae_multi.npy', history_to_save) #/content/checkpoints er prove su drive
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_multi.npy', history_to_save) #/content/checkpoints er prove su drive
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 else:
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_ae_multi.npy', history)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_multi.npy', history)
     
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
