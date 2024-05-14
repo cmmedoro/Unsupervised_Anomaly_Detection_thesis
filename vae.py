@@ -113,6 +113,10 @@ class LstmVAE(nn.Module):
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
         h = self.encoder(batch) #, z_hat, mu, logvar
+        batch_1 = h.size()[1]
+        n_feats = h.size()[2]
+        #print("Input D: ", z.size())
+        h = h.reshape((batch_1, n_feats))
         mu = self.mean(h)
         logvar = self.log_var(h)
         z_hat = self.reparametrize(mu, logvar)
