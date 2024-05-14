@@ -17,8 +17,10 @@ class Encoder(nn.Module):
         )
 
   def forward(self, w):
-    #print("Input E: ", w.size())
+    print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
+    print("Z: ", z.size())
+    print("H_n: ", h_n.size())
     return h_n
     
 class Decoder(nn.Module):
