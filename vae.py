@@ -81,7 +81,7 @@ class LstmVAE(nn.Module):
     logvar = self.log_var(h)
     z_hat = self.reparametrize(mu, logvar)
     w = self.decoder(z_hat, (h, h))
-    loss_1 = criterion(w, batch)
+    loss_1 = (batch-w)**2#criterion(w, batch)
     loss_2 = self.regularization_loss(mu, logvar)
     #loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
     kld_weight = 0.015 
@@ -107,7 +107,7 @@ class LstmVAE(nn.Module):
         logvar = self.log_var(h)
         z_hat = self.reparametrize(mu, logvar)
         w = self.decoder(z_hat, (h, h))
-        loss_1 = criterion(w, batch)
+        loss_1 = (batch-w)**2#criterion(w, batch)
         loss_2 = self.regularization_loss(mu, logvar)
         kld_weight = 0.015 
         loss = loss_1 + loss_2 * kld_weight#torch.mean((batch-w)**2) #loss = mse
