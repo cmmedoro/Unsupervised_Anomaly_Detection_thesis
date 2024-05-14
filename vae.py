@@ -40,10 +40,11 @@ class Decoder(nn.Module):
   def forward(self, z, h):
     #print("Hidden state: ", h.size())
     #print("Z_reparametrized: ", z.size())
-    batch = z.size()[1]
-    n_feats = z.size()[2]
+    batch = z.size()[0]
+    #batch = z.size()[1]
+    #n_feats = z.size()[2]
     #print("Input D: ", z.size())
-    z = z.reshape((batch, n_feats))
+    #z = z.reshape((batch, n_feats))
     input = z.repeat(1, self.window)
     #print(input.size())
     input = input.reshape((batch, self.window, self.latent_size))
