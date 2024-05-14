@@ -93,6 +93,8 @@ class LstmVAE(nn.Module):
     w = self.decoder(z_hat, (h, h))
     print("Output D: ", w.size())
     loss_1 = criterion(w, batch)
+    print("Batch type: ", type(batch))
+    print("Batch: ", batch.size())
     loss_2 = self.regularization_loss(mu, logvar)
     #loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
     kld_weight = 0.015 
