@@ -98,18 +98,18 @@ class LstmVAE(nn.Module):
     loss_2 = self.regularization_loss(mu, logvar)
     #loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
     kld_weight = 0.015 
-    print("Reconstruction loss: ", loss_1)
+    #print("Reconstruction loss: ", loss_1)
     #print(type(loss_1))
-    print("Regularization loss: ", loss_2)
+    #print("Regularization loss: ", loss_2)
     #print("Loss 3: ", loss_3)
-    print()
+    #print()
     #print("Loss", loss_3)
     #print("Reconstruction loss: ", loss_1.size())
-    print("Regularization loss: ", loss_2.size())
+    #print("Regularization loss: ", loss_2.size())
     #print("Loss 3: ", loss_3.size())
     #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
     loss = loss_1 + loss_2 * kld_weight
-    print(loss)
+    #print(loss)
     loss_final = torch.mean(loss, dim = 0)
     return loss_final, w
 
@@ -147,14 +147,14 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     criterion = nn.MSELoss().to(device)
     train_recos = []
     for epoch in range(epochs):
-        print("Epoch: ", epoch)
+        #print("Epoch: ", epoch)
         tr_rec = []
         for [batch] in train_loader:
             batch=to_device(batch,device)
             optimizer.zero_grad()
 
             loss, train_reco = model.training_step(batch, criterion, epoch+1)
-            print("Loss: ", loss)
+            #print("Loss: ", loss)
             loss.backward()
             optimizer.step()
             
