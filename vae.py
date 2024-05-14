@@ -43,7 +43,7 @@ class Decoder(nn.Module):
     batch = z.size()[0]
     #batch = z.size()[1]
     #n_feats = z.size()[2]
-    #print("Input D: ", z.size())
+    print("Input D: ", z.size())
     #z = z.reshape((batch, n_feats))
     input = z.repeat(1, self.window)
     #print(input.size())
@@ -110,8 +110,8 @@ class LstmVAE(nn.Module):
     #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
     loss = loss_1 + loss_2 * kld_weight
     #print(loss)
-    loss_final = torch.mean(loss, dim = 0)
-    return loss_final, w
+    #loss_final = torch.mean(loss, dim = 0)
+    return loss, w
 
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
