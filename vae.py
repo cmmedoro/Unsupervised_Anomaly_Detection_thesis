@@ -154,7 +154,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.zero_grad()
 
             loss, train_reco = model.training_step(batch, criterion, epoch+1)
-            #print("Loss: ", loss)
+            print("Loss: ", loss)
             loss.backward()
             optimizer.step()
             
