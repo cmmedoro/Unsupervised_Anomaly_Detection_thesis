@@ -43,12 +43,12 @@ class Decoder(nn.Module):
     batch = z.size()[0]
     #batch = z.size()[1]
     #n_feats = z.size()[2]
-    print("Input D: ", z.size())
+    #print("Input D: ", z.size())
     #z = z.reshape((batch, n_feats))
     input = z.repeat(1, self.window)
-    print("Repeated: ", input.size())
+    #print("Repeated: ", input.size())
     input = input.reshape((batch, self.window, self.latent_size))
-    print("Reshaped: ", input.size())
+    #print("Reshaped: ", input.size())
     w, (h_n, c_n) = self.lstm(input)#, h)
     #print("Out D: ", w.size())
     out = self.output_layer(w)
@@ -83,12 +83,12 @@ class LstmVAE(nn.Module):
     h = h.reshape((batch_1, n_feats))
     mu = self.mean(h)
     logvar = self.log_var(h)
-    print("MU:", mu.size())
-    print(logvar.size())
+    #print("MU:", mu.size())
+    #print(logvar.size())
     z_hat = self.reparametrize(mu, logvar)
-    print("Z_reparametrized: ", z_hat.size())
+    #print("Z_reparametrized: ", z_hat.size())
     w = self.decoder(z_hat, (h, h))
-    print("Output D: ", w.size())
+    #print("Output D: ", w.size())
     #print("Batch type: ", type(batch))
     #print("Batch: ", batch.size())
     loss_1 = criterion(w, batch)
@@ -152,7 +152,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         tr_rec = []
         i = 0
         for [batch] in train_loader:
-            print("Batch: ", i)
+            #print("Batch: ", i)
             batch=to_device(batch,device)
             optimizer.zero_grad()
 
