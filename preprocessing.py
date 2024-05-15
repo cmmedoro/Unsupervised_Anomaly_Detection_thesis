@@ -7,6 +7,8 @@ from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 import torch.nn.functional as F
 import torch
 
+### IMPUTATION OF NULL VALUES ###
+
 def impute_nulls(dataframe):
     # Keep track of nan values for postprocessing
     dataframe['is_na'] = dataframe.meter_reading.isna()
@@ -54,6 +56,23 @@ def fill_gaps(readings, buildings, averages):
     else:
       readings[i] = float(readings[i]) # Parse to float all present values
 
+### IMPUTATION MISSING DATES ###
+def impute_missing_dates(dataframe):
+  """
+  Take first and last timestamp available. Create a new index starting from these two values, making sure that the index is 
+  sampled with 1 hour jump. Use ffill to impute the missing values for the dates newly created.
+  """
+  dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
+  dataframe = dataframe.set_index(['timestamp'])
+  start_ts = min(dataframe.index)
+  end_ts = max(dataframe.index)
+  new_index = pd.date_range(start_ts, end=end_ts, freq="1H")
+  dfs_dict = {}
+  for building_id, gdf in dataframe.groupby("building_id"):
+      dfs_dict[building_id] = gdf.reindex(new_index, method='ffill')
+  return dfs_dict
+
+### ADDING NEW FEATURES ###
 
 # New time features: they are used to encode in a continuous way the time
 def sin_transformer(period):
@@ -108,20 +127,7 @@ def create_diff_lag_features(dataframe, list_lags):
   df.update(df[diff_cols].fillna(0))
   return df
 
-def impute_missing_dates(dataframe):
-  """
-  Take first and last timestamp available. Create a new index starting from these two values, making sure that the index is 
-  sampled with 1 hour jump. Use ffill to impute the missing values for the dates newly created.
-  """
-  dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
-  dataframe = dataframe.set_index(['timestamp'])
-  start_ts = min(dataframe.index)
-  end_ts = max(dataframe.index)
-  new_index = pd.date_range(start_ts, end=end_ts, freq="1H")
-  dfs_dict = {}
-  for building_id, gdf in dataframe.groupby("building_id"):
-      dfs_dict[building_id] = gdf.reindex(new_index, method='ffill')
-  return dfs_dict
+### SPLIT THE DATASET IN TRAIN, VAL, TEST ###
 
 def split(dataframe, buildings_id):
   dfs_dict_1 = {}
@@ -161,7 +167,7 @@ def train_val_test_split(dataframe):
 
   return dfs_dict_train, dfs_dict_val, dfs_dict_test
 
-# sequences divided per building
+# sequences divided per building: this is useful for FORECASTING
 def split_sequences(dataframe, n_steps):
   scaler = MinMaxScaler(feature_range=(0,1))
   X, y = list(), list()
@@ -190,7 +196,7 @@ def create_train_eval_sequences(dataframe, time_steps):
   for building_id, gdf in dataframe.groupby("building_id"):
       gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
       building_data = np.array(gdf[['meter_reading']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
-      for i in range(len(building_data) - time_steps + 1):
+      for i in range(len(building_data) - time_steps + 1): #range(0, len(building_data) - time_steps +1, stride):
         # find the end of this sequence
         end_ix = i + time_steps
         # check if we are beyond the dataset length for this building

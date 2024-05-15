@@ -133,7 +133,7 @@ def define_overl_threshold(predicted_df_test, perc): # wi can be 1 or 2
   return predicted_df_test
 
 
-### ANOMALY DETECTION FOR AUTOENCODERS ###
+### ANOMALY DETECTION FOR AUTOENCODERS (UNIVARIATE) ###
 def get_predicted_dataset(dataset, reconstruction):
   # This will be used both for the test set and for the validation set, which is going to be used as reference for thresholds in some cases
   scaler = MinMaxScaler(feature_range=(0,1))

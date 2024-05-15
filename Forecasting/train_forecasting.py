@@ -23,6 +23,7 @@ model_type = args.model_type
 device = get_default_device()
 
 #### Open the dataset ####
+print("Inizio")
 # Original dataset
 #ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu
 #energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
@@ -33,8 +34,6 @@ df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_
 ### PREPROCESSING ###
 # 1) Impute missing values
 imputed_df = impute_nulls(df)
-# 2) Add trigonometric features
-df = add_trigonometric_features(imputed_df)
 
 # 2) Resample the dataset: measurement frequency = "1h"
 dfs_dict = impute_missing_dates(df)
@@ -62,8 +61,9 @@ if args.do_resid:
     test = pd.concat(dfs_test.values())
 print(train.columns)
 if args.do_multivariate:
-    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
+    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
+    residui_df = add_trig_resid(residui_df)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -147,10 +147,12 @@ print(model)
 # Start training
 history = training(N_EPOCHS, model, train_loader, val_loader)
 print(history)
-history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-np.save('/content/checkpoints/history_lstm_forecasting.npy', history_to_save)
+
 
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 torch.save(model.state_dict(), checkpoint_path)
 
+history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
+np.save('/content/checkpoints/history_lstm_forecasting.npy', history_to_save)
+#/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis
