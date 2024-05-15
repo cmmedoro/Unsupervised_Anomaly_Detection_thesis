@@ -13,7 +13,7 @@ import parser_file
 import warnings
 warnings.filterwarnings('ignore')
 from utils_ae import *
-from Forecasting.lstm import *
+from lstm import *
 
 args = parser_file.parse_arguments()
 
