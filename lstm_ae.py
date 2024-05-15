@@ -10,10 +10,12 @@ class Encoder(nn.Module):
     self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
+    self.dropout = nn.Dropout(0.2)
   def forward(self, w):
     #print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
     #print("Output E: ", h_n.size())
+    h_n = self.dropout(h_n)
     return h_n
     
 class Decoder(nn.Module):
@@ -24,13 +26,15 @@ class Decoder(nn.Module):
     self.lstm = nn.LSTM(input_size=latent_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
+    self.dropout = nn.Dropout = 0.2
     self.output_layer = nn.Linear(latent_size, out_size)
         
   def forward(self, z):
     batch = z.size()[1]
-    n_feats = z.size()[2]
+    #n_feats = z.size()[2]
     #print("Input D: ", z.size())
-    z = z.reshape((batch, n_feats))
+    #z = z.reshape((batch, n_feats))
+    z = z.squeeze()
     #print("Reshaped input: ", z.size())
     #input = z.reshape((batch, self.latent_size))
     input = z.repeat(1, self.window)
@@ -39,6 +43,7 @@ class Decoder(nn.Module):
     #print(input.size())
     w, (h_n, c_n) = self.lstm(input)
     #print("Out D: ", w.size())
+    w = self.dropout(w)
     out = self.output_layer(w)
     #print("Output D: ", out.size())
     return out

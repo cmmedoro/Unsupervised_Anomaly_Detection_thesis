@@ -19,16 +19,10 @@ class Encoder(nn.Module):
   def forward(self, w):
     #print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
-    print("Before dropout")
-    print(z[:, -1, :])
-    print(h_n)
     #print("Z: ", z.size())
     #print("H_n: ", h_n.size())
     z = self.dropout(z)
-    print("After dropout")
-    print(z[:, -1, :])
     h_n = self.dropout(h_n)
-    print(h_n)
     return h_n
     
 class Decoder(nn.Module):
@@ -43,6 +37,7 @@ class Decoder(nn.Module):
     self.lstm = nn.LSTM(input_size=latent_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
+    self.dropout = nn.Dropout(0.2)
     self.output_layer = nn.Linear(latent_size, out_size)
         
   def forward(self, z, h):
@@ -59,6 +54,7 @@ class Decoder(nn.Module):
     #print("Reshaped: ", input.size())
     w, (h_n, c_n) = self.lstm(input)#, h)
     #print("Out D: ", w.size())
+    w = self.dropout(w)
     out = self.output_layer(w)
     #print("Output D: ", out.size())
     return out
@@ -84,11 +80,12 @@ class LstmVAE(nn.Module):
         return kld_loss
   
   def training_step(self, batch, criterion, n):
-    h = self.encoder(batch) #, z_hat, mu, logvar
-    batch_1 = h.size()[1]
-    n_feats = h.size()[2]
+    h = self.encoder(batch)
+    #batch_1 = h.size()[1]
+    #n_feats = h.size()[2]
     #print("Input D: ", z.size())
-    h = h.reshape((batch_1, n_feats))
+    #h = h.reshape((batch_1, n_feats))
+    h = h.squeeze()
     mu = self.mean(h)
     logvar = self.log_var(h)
     #print("MU:", mu.size())
@@ -103,16 +100,6 @@ class LstmVAE(nn.Module):
     loss_2 = self.regularization_loss(mu, logvar)
     #loss_3 = torch.mean(self.regularization_loss(mu, logvar), dim = 0)
     kld_weight = 0.015 
-    #print("Reconstruction loss: ", loss_1)
-    #print(type(loss_1))
-    #print("Regularization loss: ", loss_2)
-    #print("Loss 3: ", loss_3)
-    #print()
-    #print("Loss", loss_3)
-    #print("Reconstruction loss: ", loss_1.size())
-    #print("Regularization loss: ", loss_2.size())
-    #print("Loss 3: ", loss_3.size())
-    #loss = criterion(w, batch) + self.regularization_loss(mu, logvar)#torch.mean((batch-w)**2) #loss = mse
     loss = loss_1 + loss_2 * kld_weight
     #print(loss)
     #loss_final = torch.mean(loss, dim = 0)
@@ -121,10 +108,7 @@ class LstmVAE(nn.Module):
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
         h = self.encoder(batch) #, z_hat, mu, logvar
-        batch_1 = h.size()[1]
-        n_feats = h.size()[2]
-        #print("Input D: ", z.size())
-        h = h.reshape((batch_1, n_feats))
+        h = h.squeeze()
         mu = self.mean(h)
         logvar = self.log_var(h)
         z_hat = self.reparametrize(mu, logvar)
@@ -182,9 +166,7 @@ def testing(model, test_loader):
         for [batch] in test_loader: 
             batch=to_device(batch,device)
             h = model.encoder(batch) #, z_hat, mu, logvar
-            batch_1 = h.size()[1]
-            n_feats = h.size()[2]
-            h = h.reshape((batch_1, n_feats))
+            h = h.squeeze()
             mu = model.mean(h)
             logvar = model.log_var(h)
             z_hat = model.reparametrize(mu, logvar)
