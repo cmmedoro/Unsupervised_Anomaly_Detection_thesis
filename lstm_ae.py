@@ -26,7 +26,7 @@ class Decoder(nn.Module):
     self.lstm = nn.LSTM(input_size=latent_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
-    self.dropout = nn.Dropout = 0.2
+    self.dropout = nn.Dropout(0.2)
     self.output_layer = nn.Linear(latent_size, out_size)
         
   def forward(self, z):
