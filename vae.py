@@ -174,6 +174,9 @@ def testing(model, test_loader):
         for [batch] in test_loader: 
             batch=to_device(batch,device)
             h = model.encoder(batch) #, z_hat, mu, logvar
+            batch_1 = h.size()[1]
+            n_feats = h.size()[2]
+            h = h.reshape((batch_1, n_feats))
             mu = model.mean(h)
             logvar = model.log_var(h)
             z_hat = model.reparametrize(mu, logvar)
