@@ -189,6 +189,24 @@ def split_sequences(dataframe, n_steps):
 
 
 # Generated training sequences to use in the model.
+def create_sequences(dataframe, time_steps, stride = 1):
+  scaler = MinMaxScaler(feature_range=(0,1))
+  output = []
+  output2=[]
+  for building_id, gdf in dataframe.groupby("building_id"):
+      gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
+      building_data = np.array(gdf[['meter_reading']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
+      for i in range(0, len(building_data) - time_steps + 1, stride): #range(0, len(building_data) - time_steps +1, stride):
+        # find the end of this sequence
+        end_ix = i + time_steps
+        # check if we are beyond the dataset length for this building
+        if end_ix > len(building_data)-1:
+          break
+        output.append(building_data[i : (i + time_steps),:])
+        output2.append(building_data[i : (i + time_steps),0])
+  return np.stack(output), np.stack(output2)
+
+
 def create_train_eval_sequences(dataframe, time_steps):
   scaler = MinMaxScaler(feature_range=(0,1))
   output = []
