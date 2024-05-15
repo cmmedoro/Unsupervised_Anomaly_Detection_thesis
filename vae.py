@@ -15,12 +15,20 @@ class Encoder(nn.Module):
     self.lstm = nn.LSTM(input_size=in_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
-
+    self.dropout = nn.Dropout(0.2)
   def forward(self, w):
     #print("Input E: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
+    print("Before dropout")
+    print(z[:, -1, :])
+    print(h_n)
     #print("Z: ", z.size())
     #print("H_n: ", h_n.size())
+    z = self.dropout(z)
+    print("After dropout")
+    print(z[:, -1, :])
+    h_n = self.dropout(h_n)
+    print(h_n)
     return h_n
     
 class Decoder(nn.Module):
