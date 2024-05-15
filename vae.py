@@ -140,6 +140,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     criterion = nn.MSELoss().to(device)
     train_recos = []
     for epoch in range(epochs):
+        model.train()
         tr_rec = []
         for [batch] in train_loader:
             batch=to_device(batch,device)
@@ -153,6 +154,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             tr_rec.append(train_reco)
 
         train_recos.append(tr_rec) 
+        model.eval()
         result= evaluate(model, val_loader, criterion, epoch+1)
         result_train = evaluate(model, train_loader, criterion, epoch+1)
         model.epoch_end(epoch, result, result_train)
@@ -168,9 +170,9 @@ def testing(model, test_loader):
             h = model.encoder(batch) #, z_hat, mu, logvar
             h = h.squeeze()
             mu = model.mean(h)
-            logvar = model.log_var(h)
-            z_hat = model.reparametrize(mu, logvar)
-            w = model.decoder(z_hat, (h, h))
+            #logvar = model.log_var(h)
+            #z_hat = model.reparametrize(mu, logvar)
+            w = model.decoder(mu, (h, h))
             results.append(torch.mean((batch-w)**2,axis=1))
             reconstruction.append(w)
-    return results, reconstruction, mu, logvar
+    return results, reconstruction
