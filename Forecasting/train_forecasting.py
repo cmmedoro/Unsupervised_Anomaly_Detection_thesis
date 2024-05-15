@@ -37,6 +37,7 @@ imputed_df = impute_nulls(df)
 # 2) Resample the dataset: measurement frequency = "1h"
 dfs_dict = impute_missing_dates(df)
 df1 = pd.concat(dfs_dict.values())
+print(df1)
 #lags = [1, -1]
 #df1 = create_diff_lag_features(df1, lags)
 # 3) Add trigonometric features
