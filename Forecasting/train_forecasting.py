@@ -35,16 +35,15 @@ df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_
 imputed_df = impute_nulls(df)
 
 # 2) Resample the dataset: measurement frequency = "1h"
-dfs_dict = impute_missing_dates(df)
+dfs_dict = impute_missing_dates(imputed_df)
 df1 = pd.concat(dfs_dict.values())
-print(df1)
 #lags = [1, -1]
 #df1 = create_diff_lag_features(df1, lags)
 # 3) Add trigonometric features
-df = add_trigonometric_features(imputed_df)
+df2 = add_trigonometric_features(df1)
 
 # Split the dataset into train, validation and test
-dfs_train, dfs_val, dfs_test = train_val_test_split(df1)
+dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
 train = pd.concat(dfs_train.values())
 val = pd.concat(dfs_val.values())
 test = pd.concat(dfs_test.values())
