@@ -135,7 +135,7 @@ def evaluate(model, val_loader, criterion, n):
     for [batch] in val_loader:
        batch = to_device(batch, device)
        loss = model.validation_step(batch, criterion, n) 
-       batch_loss.append(loss)
+       batch_loss.append(loss.mean())
 
     epoch_loss = torch.stack(batch_loss).mean()
     return epoch_loss
@@ -148,11 +148,8 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     criterion = nn.MSELoss().to(device)
     train_recos = []
     for epoch in range(epochs):
-        #print("Epoch: ", epoch)
         tr_rec = []
-        i = 0
         for [batch] in train_loader:
-            #print("Batch: ", i)
             batch=to_device(batch,device)
             optimizer.zero_grad()
 
@@ -162,7 +159,6 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.step()
             
             tr_rec.append(train_reco)
-            i = i+1
 
         train_recos.append(tr_rec) 
         result= evaluate(model, val_loader, criterion, epoch+1)
