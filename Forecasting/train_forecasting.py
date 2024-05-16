@@ -153,5 +153,5 @@ checkpoint_path = args.save_checkpoint_dir
 torch.save(model.state_dict(), checkpoint_path)
 
 history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forecasting.npy', history_to_save)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forecasting_2.npy', history_to_save)
 #/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis

@@ -94,8 +94,8 @@ if args.do_multivariate:
 else:
     #X_train, y_train = create_train_eval_sequences(train, train_window)
     #X_val, y_val = create_train_eval_sequences(val, train_window)
-    X_train, y_train = create_sequences(train, train_window, 32)
-    X_val, y_val = create_sequences(val, train_window, 32)
+    X_train, y_train = create_sequences(train, train_window, 1)
+    X_val, y_val = create_sequences(val, train_window, 1)
 
 if args.do_test and not args.do_multivariate:
     # Overlapping windows
