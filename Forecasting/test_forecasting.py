@@ -1,5 +1,4 @@
-from preprocessing import *
-import preprocessing as prp
+from Forecasting.preprocessing import *
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -7,7 +6,7 @@ import torch.utils.data as data_utils
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score
-from postprocessing import *
+from Forecasting.postprocessing_forecast import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file
@@ -136,18 +135,19 @@ model = to_device(model, device)
 print(model)
 
 checkpoint_dir = args.checkpoint_dir
-model = torch.load(checkpoint_dir)
+checkpoint = torch.load(checkpoint_dir)
+model.load_state_dict(checkpoint)
 
 results, forecast = testing(model, test_loader)
 # On validation set
 results_v, forecast_v = testing(model, val_loader)
 
 
-reconstruction_test = np.concatenate([torch.stack(forecast[:-1]).flatten().detach().cpu().numpy(), forecast[-1].flatten().detach().cpu().numpy()])
-reconstruction_val = np.concatenate([torch.stack(forecast_v[:-1]).flatten().detach().cpu().numpy(), forecast_v[-1].flatten().detach().cpu().numpy()])
+forecast_test = np.concatenate([torch.stack(forecast[:-1]).flatten().detach().cpu().numpy(), forecast[-1].flatten().detach().cpu().numpy()])
+forecast_val = np.concatenate([torch.stack(forecast_v[:-1]).flatten().detach().cpu().numpy(), forecast_v[-1].flatten().detach().cpu().numpy()])
     
-predicted_df_val = get_predicted_dataset(val, reconstruction_val)
-predicted_df_test = get_predicted_dataset(test, reconstruction_test)
+predicted_df_val = get_predicted_dataset(val, forecast_val)
+predicted_df_test = get_predicted_dataset(test, forecast_test)
 
 threshold_method = args.threshold
 percentile = args.percentile
@@ -157,6 +157,8 @@ predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, thres
 
 predicted_df_test.index.names=['timestamp']
 predicted_df_test= predicted_df_test.reset_index()
+
+predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
 
 predicted_df_test = pd.merge(predicted_df_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
 

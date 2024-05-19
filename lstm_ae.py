@@ -118,8 +118,6 @@ def testing(model, test_loader):
             batch=to_device(batch,device)
             w=model.decoder(model.encoder(batch))
             #results.append(criterion(w, batch))
-            print(w.size())
-            print(batch.size())
             results.append(torch.mean((batch-w)**2,axis=1))
             reconstruction.append(w)
     return results, reconstruction
