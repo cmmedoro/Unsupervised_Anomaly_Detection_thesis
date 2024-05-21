@@ -175,7 +175,7 @@ if args.do_reconstruction:
         results, w, mu, logvar = testing(model, test_loader)
     else:
         results, w = testing(model,test_loader)
-    
+    print(len(w), w[0].size())
     # Reconstruction of validation set
     if model_type == "vae":
         results_v, w_v, mu_v, logvar_v = testing(model, val_loader)
@@ -257,10 +257,6 @@ elif args.do_test:
     else:
         results, w = testing(model,test_loader)
 
-    print(len(results))
-    print(results[0].size())
-    print(results[-1].size())
-    print(results)
 
     # Qui va ad ottenere le label per ogni finestra
     # Input modello è una lista di array, ognuno corrispondente a una sliding window con stride = 1 sui dati originali

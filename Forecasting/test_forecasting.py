@@ -1,4 +1,4 @@
-from Forecasting.preprocessing import *
+from Forecasting.preprocessing_forecast import *
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -58,44 +58,6 @@ if args.do_multivariate:
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
     test = pd.concat(dfs_test.values())
-
-def create_train_eval_sequences(dataframe, time_steps):
-  scaler = MinMaxScaler(feature_range=(0,1))
-  output = []
-  output2=[]
-  for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading']] = scaler.fit_transform(gdf[['meter_reading']])
-      building_data = np.array(gdf[['meter_reading']]).astype(float) 
-      for i in range(len(building_data)):
-        # find the end of this sequence
-        end_ix = i + time_steps
-        # check if we are beyond the dataset length for this building
-        if end_ix > len(building_data)-1:
-            break
-        # gather input and output parts of the pattern
-        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
-        output.append(seq_x)
-        output2.append(seq_y)
-  return np.stack(output), np.stack(output2)
-
-def create_multivariate_train_eval_sequences(dataframe, time_steps):
-  scaler = MinMaxScaler(feature_range=(0,1))
-  output = []
-  output2=[]
-  for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature','weekday_x', 'weekday_y']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']]).astype(float) 
-      for i in range(len(building_data)):
-        # find the end of this sequence
-        end_ix = i + time_steps
-        # check if we are beyond the dataset length for this building
-        if end_ix > len(building_data)-1:
-            break
-        # gather input and output parts of the pattern
-        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
-        output.append(seq_x)
-        output2.append(seq_y)
-  return np.stack(output), np.stack(output2)
 
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)

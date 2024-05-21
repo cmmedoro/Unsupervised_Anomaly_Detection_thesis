@@ -67,7 +67,7 @@ if args.do_multivariate:
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
     test = pd.concat(dfs_test.values())
-
+"""
 def create_train_eval_sequences(dataframe, time_steps):
   scaler = MinMaxScaler(feature_range=(0,1))
   output = []
@@ -108,7 +108,7 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
         output.append(seq_x)
         output2.append(seq_y)
   return np.stack(output), np.stack(output2)
-
+"""
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 train_window = args.train_window

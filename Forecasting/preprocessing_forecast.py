@@ -167,43 +167,24 @@ def train_val_test_split(dataframe):
 
   return dfs_dict_train, dfs_dict_val, dfs_dict_test
 
-# sequences divided per building: this is useful for FORECASTING
-def split_sequences(dataframe, n_steps):
-  scaler = MinMaxScaler(feature_range=(0,1))
-  X, y = list(), list()
-  for building_id, gdf in dataframe.groupby("building_id"):
-    gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']]) #,'weekday_x', 'weekday_y'
-    building_data = np.array(gdf[['meter_reading']]).astype(float)#can choose to add additional features: 'sea_level_pressure', 'weekday_x', 'weekday_y', 'is_holiday'
-    for i in range(len(building_data)):
-      # find the end of this sequence
-      end_ix = i + n_steps
-      # check if we are beyond the dataset length for this building
-      if end_ix > len(building_data)-1:
-        break
-      # gather input and output parts of the pattern
-      seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
-      X.append(seq_x)
-      y.append(seq_y)
-  return np.array(X), np.array(y)
-
-
-
 # Generated training sequences to use in the model.
 def create_train_eval_sequences(dataframe, time_steps):
   scaler = MinMaxScaler(feature_range=(0,1))
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'sea_level_pressure']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure']])
-      building_data = np.array(gdf[['meter_reading']]).astype(float) #, 'weekday_x', 'weekday_y', 'is_holiday'
-      for i in range(len(building_data) - time_steps + 1): #range(0, len(building_data) - time_steps +1, stride):
+      gdf[['meter_reading']] = scaler.fit_transform(gdf[['meter_reading']])
+      building_data = np.array(gdf[['meter_reading']]).astype(float) 
+      for i in range(len(building_data)):
         # find the end of this sequence
         end_ix = i + time_steps
         # check if we are beyond the dataset length for this building
         if end_ix > len(building_data)-1:
-          break
-        output.append(building_data[i : (i + time_steps),:])
-        output2.append(building_data[i : (i + time_steps),0])
+            break
+        # gather input and output parts of the pattern
+        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
+        output.append(seq_x)
+        output2.append(seq_y)
   return np.stack(output), np.stack(output2)
 
 def create_multivariate_train_eval_sequences(dataframe, time_steps):
@@ -211,19 +192,23 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
-      #'building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature'
-      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y', 'resid']]).astype(float) 
-      for i in range(len(building_data) - time_steps + 1):
+      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature','weekday_x', 'weekday_y']])
+      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']]).astype(float) 
+      for i in range(len(building_data)):
         # find the end of this sequence
         end_ix = i + time_steps
         # check if we are beyond the dataset length for this building
         if end_ix > len(building_data)-1:
-          break
-        output.append(building_data[i : (i + time_steps),:])
-        output2.append(building_data[i : (i + time_steps),0])
+            break
+        # gather input and output parts of the pattern
+        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
+        # In seq_x we store the data for the window
+        # In seq_y we store the meter_reading corresponding to the following data point in the sequence. This is the ground truth
+        # we are going to use to compare the predictions made by the model
+        output.append(seq_x)
+        output2.append(seq_y)
   return np.stack(output), np.stack(output2)
-
+"""
 # Generated testing sequences for use in the model.
 def create_test_sequences(dataframe, time_steps):
     scaler = MinMaxScaler(feature_range=(0,1))
@@ -254,5 +239,5 @@ def create_multivariate_test_sequences(dataframe, time_steps):
         output.append(building_data[i : end_ix,:])
         output2.append(building_data[i : end_ix,0])
     return np.stack(output), np.stack(output2)
-
+"""
 

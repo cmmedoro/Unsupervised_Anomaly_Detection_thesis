@@ -117,7 +117,15 @@ def testing(model, test_loader):
         for [batch] in test_loader: 
             batch=to_device(batch,device)
             w=model.decoder(model.encoder(batch))
+            # Need to squeeze the batch and reconstruction to compute correctly the anomaly score
+            # This because the input and the reconstruction are 3-D tensors, so we need to turn them into 2-D
+            batch_s = batch.reshape(-1, batch.size()[1] * batch.size()[2])
+            w_s = w.reshape(-1, w.size()[1] * w.size()[2])
+            #print(batch_s.size())
+            #print(w_s.size())
             #results.append(criterion(w, batch))
-            results.append(torch.mean((batch-w)**2,axis=1))
+            results.append(torch.mean((batch_s-w_s)**2,axis=1))
             reconstruction.append(w)
+    #print(len(results), results[0].size())
+    #print(len(reconstruction), reconstruction[0].size())
     return results, reconstruction

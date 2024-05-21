@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 
 from utils_ae import *
 
@@ -7,7 +8,7 @@ device = get_default_device()
 
 ### To finish ###
 class VAE(nn.Module):
-    def __init__(self, input_size, hidden_size, latent_size, data_type="binary"):
+    def __init__(self, input_size, hidden_size, latent_size, data_type="real"):
         super(VAE, self).__init__()
         # Encoder: layers
         self.fc1 = nn.Linear(input_size, hidden_size)
@@ -47,7 +48,8 @@ class VAE(nn.Module):
         z = self.reparameterize(z_mean, z_logvar)
         return z_mean, z_logvar, self.decode(z)
     
-
+"""
+QUESTO VA BENE SE I DATI SONO DI TIPO BINARY
 def compute_elbo(x, reconst_x, mean, log_var):
     # ELBO(Evidence Lower Bound) is the objective of VAE, we train the model just to maximize the ELBO.
     reconst_error = -torch.nn.functional.mse_loss(reconst_x, x, reduction='sum')
@@ -56,7 +58,17 @@ def compute_elbo(x, reconst_x, mean, log_var):
     kl_divergence = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
     elbo = (reconst_error - kl_divergence) / len(x)
     return elbo
-
+"""
+pi = torch.Tensor([math.pi])
+def compute_elbo(x, mean, log_var, out_mean, out_logvar):
+    # ELBO(Evidence Lower Bound) is the objective of VAE, we train the model just to maximize the ELBO.
+    
+    reconst_error = -0.5 * torch.sum(torch.log(2*pi) + out_logvar + (x - out_mean).pow(2) / out_logvar.exp())
+    # see Appendix B from VAE paper: "Kingma and Welling. Auto-Encoding Variational Bayes. ICLR-2014."
+    # -KL[q(z|x)||p(z)] = 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+    kl_divergence = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
+    elbo = (reconst_error - kl_divergence) / len(x)
+    return elbo
 
 def train(model, epochs, train_loader, val_loader, opt_func=torch.optim.Adam):
     history = []
@@ -69,8 +81,8 @@ def train(model, epochs, train_loader, val_loader, opt_func=torch.optim.Adam):
             # PyTorch accumulates gradients on subsequent backward passes
             optimizer.zero_grad()
             # compute reconstructions
-            mu, logvar, reconstruction = model(batch_features)
-            train_loss = -compute_elbo(batch_features, reconstruction, mu, logvar)
+            mu, logvar, (out_mu, out_var) = model(batch_features)
+            train_loss = -compute_elbo(batch_features, mu, logvar, out_mu, out_var)
             # compute accumulated gradients
             train_loss.backward()
             # perform parameter update based on current gradients
@@ -86,8 +98,8 @@ def train(model, epochs, train_loader, val_loader, opt_func=torch.optim.Adam):
         for [batch] in val_loader:
             batch = batch.to(device)
             with torch.no_grad():
-                mu_v, logvar_v, reconstruction_v = model(batch)
-                val_loss = -compute_elbo(batch, reconstruction_v, mu_v, logvar_v)
+                mu_v, logvar_v, (out_mu_v, out_var_v) = model(batch)
+                val_loss = -compute_elbo(batch, mu_v, logvar_v, out_mu_v, out_var_v)
                 eval_loss += val_loss.item()
         eval_loss = eval_loss / len(val_loader)
         # display the epoch training and validation loss
@@ -101,7 +113,8 @@ def test(model, test_loader):
     with torch.no_grad():
         for [batch] in test_loader: 
             batch=to_device(batch,device)
-            mu, logvar, reconstruction = model(batch)
+            mu, logvar, (out_mu, out_var) = model(batch)
+            reconstruction = out_mu
             results.append(torch.mean((batch-reconstruction)**2,axis=1))
             reconstructions.append(reconstruction)
     return results, reconstructions, mu, logvar
