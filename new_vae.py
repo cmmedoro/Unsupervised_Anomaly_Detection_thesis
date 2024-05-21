@@ -70,7 +70,7 @@ def compute_elbo(x, mean, log_var, out_mean, out_logvar):
     elbo = (reconst_error - kl_divergence) / len(x)
     return elbo
 
-def train(model, epochs, train_loader, val_loader, opt_func=torch.optim.Adam):
+def training(model, epochs, train_loader, val_loader, opt_func=torch.optim.Adam):
     history = []
     optimizer = opt_func(model.parameters(), lr = 0.0001) 
     for epoch in range(epochs):
@@ -107,7 +107,7 @@ def train(model, epochs, train_loader, val_loader, opt_func=torch.optim.Adam):
         history.append({'train_loss': loss, 'eval_loss': eval_loss})
     return history
 
-def test(model, test_loader):
+def testing(model, test_loader):
     results=[]
     reconstructions = []
     with torch.no_grad():
