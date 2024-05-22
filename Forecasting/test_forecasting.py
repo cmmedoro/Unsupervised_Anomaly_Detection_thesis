@@ -1,4 +1,4 @@
-from Forecasting.preprocessing_forecast import *
+from preprocessing_forecast import *
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -6,14 +6,14 @@ import torch.utils.data as data_utils
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score
-from Forecasting.postprocessing_forecast import *
+from postprocessing_forecast import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file
 import warnings
 warnings.filterwarnings('ignore')
 from utils_ae import *
-from Forecasting.lstm import *
+from lstm import *
 
 args = parser_file.parse_arguments()
 
@@ -21,8 +21,8 @@ model_type = args.model_type
 
 device = get_default_device()
 #### Open the dataset ####
-#energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
+energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
+#energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature']]
 
@@ -30,30 +30,33 @@ df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_
 # 1) Impute missing values
 imputed_df = impute_nulls(df)
 # 2) Add trigonometric features
-df = add_trigonometric_features(imputed_df)
-# 3) Resample the dataset: measurement frequency = "1h"
-dfs_dict = impute_missing_dates(df)
+dfs_dict = impute_missing_dates(imputed_df)
 df1 = pd.concat(dfs_dict.values())
+#lags = [1, -1]
+#df1 = create_diff_lag_features(df1, lags)
+# 3) Add trigonometric features
+df2 = add_trigonometric_features(df1)
 
 # Split the dataset into train, validation and test
-dfs_train, dfs_val, dfs_test = train_val_test_split(df1)
+dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
 train = pd.concat(dfs_train.values())
 val = pd.concat(dfs_val.values())
 test = pd.concat(dfs_test.values())
 
 if args.do_resid:
     # Residuals dataset (missing values and dates imputation already performed)
-    #residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
-    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
-    residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
+    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
+    #residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
+    residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid', 'air_temperature']]
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
     test = pd.concat(dfs_test.values())
 print(train.columns)
 if args.do_multivariate:
-    residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
-    residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid']]
+    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
+    residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid', 'air_temperature']]
+    residui_df = add_trig_resid(residui_df)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -104,28 +107,28 @@ results, forecast = testing(model, test_loader)
 # On validation set
 results_v, forecast_v = testing(model, val_loader)
 
+if args.do_reconstruction: 
+    forecast_test = np.concatenate([torch.stack(forecast[:-1]).flatten().detach().cpu().numpy(), forecast[-1].flatten().detach().cpu().numpy()])
+    forecast_val = np.concatenate([torch.stack(forecast_v[:-1]).flatten().detach().cpu().numpy(), forecast_v[-1].flatten().detach().cpu().numpy()])
+        
+    predicted_df_val = get_predicted_dataset(val, forecast_val, train_window)
+    predicted_df_test = get_predicted_dataset(test, forecast_test, train_window)
 
-forecast_test = np.concatenate([torch.stack(forecast[:-1]).flatten().detach().cpu().numpy(), forecast[-1].flatten().detach().cpu().numpy()])
-forecast_val = np.concatenate([torch.stack(forecast_v[:-1]).flatten().detach().cpu().numpy(), forecast_v[-1].flatten().detach().cpu().numpy()])
-    
-predicted_df_val = get_predicted_dataset(val, forecast_val)
-predicted_df_test = get_predicted_dataset(test, forecast_test)
+    threshold_method = args.threshold
+    percentile = args.percentile
+    weight_overall = args.weights_overall
 
-threshold_method = args.threshold
-percentile = args.percentile
-weight_overall = args.weights_overall
+    predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
+    print(predicted_df_test.columns)
+    #predicted_df_test.index.names=['timestamp']
+    #predicted_df_test= predicted_df_test.reset_index()
 
-predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
+    predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
 
-predicted_df_test.index.names=['timestamp']
-predicted_df_test= predicted_df_test.reset_index()
+    predicted_df_test = pd.merge(predicted_df_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
 
-predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
-
-predicted_df_test = pd.merge(predicted_df_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
-
-print(classification_report(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
-print(roc_auc_score(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
+    print(classification_report(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
+    print(roc_auc_score(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
 
 
 print("Results based on the anomaly score")
@@ -151,7 +154,7 @@ y_pred_[y_pred >= threshold] = 1
 print(roc_auc_score(y_test, y_pred_))
 print(classification_report(y_test, y_pred_))
 print("OTHER METHOD: ")
-threshold = np.percentile(y_pred, 80)
+threshold = np.percentile(y_pred, 70)
 y_pred_ = np.zeros(y_pred.shape[0])
 y_pred_[y_pred >= threshold] = 1
 print(classification_report(y_test, y_pred_))

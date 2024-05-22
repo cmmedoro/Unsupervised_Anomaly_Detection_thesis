@@ -72,7 +72,7 @@ def compute_elbo(x, mean, log_var, out_mean, out_logvar):
 
 def training(model, epochs, train_loader, val_loader, opt_func=torch.optim.Adam):
     history = []
-    optimizer = opt_func(model.parameters(), lr = 0.0001) 
+    optimizer = opt_func(model.parameters(), lr = 1e-3) 
     for epoch in range(epochs):
         loss = 0
         for [batch_features] in train_loader:
