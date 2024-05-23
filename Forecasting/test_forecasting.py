@@ -36,6 +36,8 @@ df1 = pd.concat(dfs_dict.values())
 #df1 = create_diff_lag_features(df1, lags)
 # 3) Add trigonometric features
 df2 = add_trigonometric_features(df1)
+lags = [-1, 24, -24, 168, -168]
+df2 = create_diff_lag_features(df2, lags)
 
 # Split the dataset into train, validation and test
 dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
@@ -57,6 +59,8 @@ if args.do_multivariate:
     residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid', 'air_temperature']]
     residui_df = add_trig_resid(residui_df)
+    lags = [-1, 24, -24, 168, -168]
+    residui_df = create_diff_lag_features(residui_df, lags)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -120,8 +124,8 @@ if args.do_reconstruction:
 
     predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
     print(predicted_df_test.columns)
-    #predicted_df_test.index.names=['timestamp']
-    #predicted_df_test= predicted_df_test.reset_index()
+    predicted_df_test.index.names=['timestamp']
+    predicted_df_test= predicted_df_test.reset_index()
 
     predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
 

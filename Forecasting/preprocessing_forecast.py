@@ -179,8 +179,8 @@ def create_train_eval_sequences(dataframe, time_steps):
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading']] = scaler.fit_transform(gdf[['meter_reading']])
-      building_data = np.array(gdf[['meter_reading']]).astype(float) 
+      gdf[['diff_lag_-1']] = scaler.fit_transform(gdf[['diff_lag_-1']])
+      building_data = np.array(gdf[['diff_lag_-1']]).astype(float) 
       for i in range(len(building_data)):
         # find the end of this sequence
         end_ix = i + time_steps

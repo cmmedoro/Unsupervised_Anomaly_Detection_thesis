@@ -40,6 +40,11 @@ df1 = pd.concat(dfs_dict.values())
 #df1 = create_diff_lag_features(df1, lags)
 # 3) Add trigonometric features
 df2 = add_trigonometric_features(df1)
+# 4) Add lag features and differences with respect to the meter_reading value
+# N.B.: we are using the shift function of Dataframes ---> if we pass a positive number as lag it means that we are going to link each
+# datapoint to a previous one, whereas when we pass a negative value we relate the datapoint to a future observation
+lags = [-1, 24, -24, 168, -168]
+df2 = create_diff_lag_features(df2, lags)
 
 # Split the dataset into train, validation and test
 dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
@@ -62,52 +67,16 @@ if args.do_multivariate:
     residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'is_holiday', 'resid', 'air_temperature']]
     residui_df = add_trig_resid(residui_df)
+    # Add lag features and differences with respect to the meter_reading value
+    # N.B.: we are using the shift function of Dataframes ---> if we pass a positive number as lag it means that we are going to link each
+    # datapoint to a previous one, whereas when we pass a negative value we relate the datapoint to a future observation
+    lags = [-1, 24, -24, 168, -168]
+    residui_df = create_diff_lag_features(residui_df, lags)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
     test = pd.concat(dfs_test.values())
-"""
-def create_train_eval_sequences(dataframe, time_steps):
-  scaler = MinMaxScaler(feature_range=(0,1))
-  output = []
-  output2=[]
-  for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading']] = scaler.fit_transform(gdf[['meter_reading']])
-      building_data = np.array(gdf[['meter_reading']]).astype(float) 
-      for i in range(len(building_data)):
-        # find the end of this sequence
-        end_ix = i + time_steps
-        # check if we are beyond the dataset length for this building
-        if end_ix > len(building_data)-1:
-            break
-        # gather input and output parts of the pattern
-        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
-        output.append(seq_x)
-        output2.append(seq_y)
-  return np.stack(output), np.stack(output2)
 
-def create_multivariate_train_eval_sequences(dataframe, time_steps):
-  scaler = MinMaxScaler(feature_range=(0,1))
-  output = []
-  output2=[]
-  for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature','weekday_x', 'weekday_y']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y']]).astype(float) 
-      for i in range(len(building_data)):
-        # find the end of this sequence
-        end_ix = i + time_steps
-        # check if we are beyond the dataset length for this building
-        if end_ix > len(building_data)-1:
-            break
-        # gather input and output parts of the pattern
-        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
-        # In seq_x we store the data for the window
-        # In seq_y we store the meter_reading corresponding to the following data point in the sequence. This is the ground truth
-        # we are going to use to compare the predictions made by the model
-        output.append(seq_x)
-        output2.append(seq_y)
-  return np.stack(output), np.stack(output2)
-"""
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 train_window = args.train_window
@@ -152,5 +121,5 @@ checkpoint_path = args.save_checkpoint_dir
 torch.save(model.state_dict(), checkpoint_path)
 
 history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forecasting_multi.npy', history_to_save)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forecasting_diff_-1.npy', history_to_save)
 #/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis
