@@ -76,6 +76,7 @@ if args.do_multivariate:
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
     test = pd.concat(dfs_test.values())
+    train.columns
 
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
@@ -86,7 +87,8 @@ if args.do_multivariate:
 else:
     X_train, y_train = create_train_eval_sequences(train, train_window)
     X_val, y_val = create_train_eval_sequences(val, train_window)
-
+print(X_train.shape, y_train.shape)
+print(X_val.shape, y_val.shape)
 
 BATCH_SIZE =  args.batch_size
 N_EPOCHS = args.epochs
@@ -121,5 +123,5 @@ checkpoint_path = args.save_checkpoint_dir
 torch.save(model.state_dict(), checkpoint_path)
 
 history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forecasting_diff_-1.npy', history_to_save)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forecasting_multi_16feats_27_05.npy', history_to_save)
 #/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis

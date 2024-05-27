@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Tuple
 from tqdm.auto import tqdm
+from sklearn.preprocessing import MinMaxScaler
 
 from utils_ae import *
 device = get_default_device()
@@ -101,3 +102,38 @@ def testing(model, test_loader):
             #results.append(torch.mean((batch_s-w_s)**2, axis = 1))
             forecast.append(w)
     return results, forecast
+
+def testing_sostitution(model, test, train_window, threshold):
+   """
+   Idea: instead of testing in the traditional way, at inference time we evaluate for each forecasted data point whether it can
+   be associated to an anomaly or not. If we would predict an anomaly, we then proceed by substituting the meter_reading value
+   with the predictions just made.
+   """
+   predictions = []
+   forecasts = []
+   scaler = MinMaxScaler(feature_range=(0,1))
+   for building_id, gdf in test.groupby("building_id"):
+      gdf[['meter_reading']] = scaler.fit_transform(gdf[['meter_reading']])
+      building_data = np.array(gdf[['meter_reading']]).astype(float) 
+      for i in range(len(building_data)):
+        # find the end of this sequence
+        end_ix = i + train_window
+        # check if we are beyond the dataset length for this building
+        if end_ix > len(building_data)-1:
+            break
+        # gather input and output parts of the pattern
+        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
+        n_feat = seq_x.shape()[1]
+        window = seq_x.reshape(-1, train_window, n_feat)
+        next_ts = model(window)
+        if np.abs(next_ts - seq_y) >= threshold * next_ts:
+           # This means I predict an anomaly
+           predictions.append(1)
+           # Need to substitute
+           building_data[end_ix] = next_ts
+        else:
+           predictions.append(0)  
+        forecasts.append(next_ts)
+   return predictions
+               
+   

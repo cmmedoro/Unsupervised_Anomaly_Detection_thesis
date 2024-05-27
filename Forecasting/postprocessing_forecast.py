@@ -33,12 +33,12 @@ def get_predicted_dataset(dataset, forecast, train_window):
   scaler = MinMaxScaler(feature_range=(0,1))
   dfs_dict_1 = {}
   for building_id, gdf in dataset.groupby("building_id"):
-      gdf[['diff_lag_-1']]=scaler.fit_transform(gdf[['diff_lag_-1']])
+      gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
       dfs_dict_1[building_id] = gdf[train_window:]
   predicted_df = pd.concat(dfs_dict_1.values())
   predicted_df['forecast'] = forecast
   predicted_df['abs_loss'] = np.abs(predicted_df.meter_reading - predicted_df.forecast)
-  predicted_df['rel_loss'] = np.abs((predicted_df['forecast']-predicted_df['diff_lag_-1'])/predicted_df['forecast'])
+  predicted_df['rel_loss'] = np.abs((predicted_df['forecast']-predicted_df['meter_reading'])/predicted_df['forecast'])
   return predicted_df
 
 def threshold_abs_loss(val, percentile, predicted_df):
@@ -55,7 +55,7 @@ def threshold_norm_abs_loss(val, percentile, predicted_df):
   # find the index of minimum element from the array
   index = difference_array.argmin()
   #indexes = np.argmax(val_mae_loss)
-  threshold = threshold/val['diff_lag_-1'].values[index]
+  threshold = threshold/val['meter_reading'].values[index]
   predicted_df['threshold'] = threshold
   predicted_df['predicted_anomaly'] = predicted_df['abs_loss'] > threshold * predicted_df['forecast']
   return predicted_df

@@ -114,7 +114,8 @@ results_v, forecast_v = testing(model, val_loader)
 if args.do_reconstruction: 
     forecast_test = np.concatenate([torch.stack(forecast[:-1]).flatten().detach().cpu().numpy(), forecast[-1].flatten().detach().cpu().numpy()])
     forecast_val = np.concatenate([torch.stack(forecast_v[:-1]).flatten().detach().cpu().numpy(), forecast_v[-1].flatten().detach().cpu().numpy()])
-        
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/new_forecast_test_16feats_27_05.npy', forecast_test)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/new_forecast_val_16feats_27_05.npy', forecast_val)
     predicted_df_val = get_predicted_dataset(val, forecast_val, train_window)
     predicted_df_test = get_predicted_dataset(test, forecast_test, train_window)
 
@@ -124,8 +125,8 @@ if args.do_reconstruction:
 
     predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
     print(predicted_df_test.columns)
-    predicted_df_test.index.names=['timestamp']
-    predicted_df_test= predicted_df_test.reset_index()
+    #predicted_df_test.index.names=['timestamp']
+    #predicted_df_test= predicted_df_test.reset_index()
 
     predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
 
