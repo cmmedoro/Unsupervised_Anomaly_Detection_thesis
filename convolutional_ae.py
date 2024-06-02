@@ -6,28 +6,28 @@ from utils_ae import *
 device = get_default_device()
 
 class Encoder(nn.Module):
-  def __init__(self, n_features, latent_size): #(1, 32)
+  def __init__(self, train_window, latent_size): #(1, 32) #train_window previously: n_features
     super().__init__()
     # CONVOLUTIONAL ENCODER
-    #in_channels = n_features
-    self.conv1 = nn.Conv1d(in_channels=n_features, out_channels= latent_size, kernel_size=7, padding=3, stride=2)
+    #in_channels = train_window
+    self.conv1 = nn.Conv1d(in_channels=train_window, out_channels= latent_size, kernel_size=7, padding=3, stride=2)
     self.conv2 = nn.Conv1d(in_channels=latent_size, out_channels= latent_size//2, kernel_size=7, padding=3, stride=2)
     self.conv3 = nn.Conv1d(in_channels=latent_size//2, out_channels= latent_size//4, kernel_size=7, padding=3, stride=2)
     self.relu = nn.ReLU(True)
     self.dropout = nn.Dropout(p=0.2)
   def forward(self, w):
-    #print("Input E: ", w.size())
-    out = self.conv1(w.permute(0, 2, 1)) #w #x.permute(0, 2, 1) ---> needed because conv1d wants input in form (batch, n_features, window_size)
-    #print("Conv1 E: ", out.size())
+    print("Input E: ", w.size())
+    out = self.conv1(w) #w #x.permute(0, 2, 1) ---> needed because conv1d wants input in form (batch, n_features, window_size)
+    print("Conv1 E: ", out.size())
     out = self.relu(out)
     out = self.dropout(out)
     out = self.conv2(out)
-    #print("Conv2 E: ", out.size())
+    print("Conv2 E: ", out.size())
     out = self.relu(out)
     out = self.conv3(out)
-    #print("Conv3 E: ", out.size())
+    print("Conv3 E: ", out.size())
     z = self.relu(out)
-    #print("Output E: ", z.size())
+    print("Output E: ", z.size())
     return z
     
 class Decoder(nn.Module):
@@ -41,19 +41,19 @@ class Decoder(nn.Module):
     self.sigmoid = nn.Sigmoid()
         
   def forward(self, z):
-    #print("Input D: ", z.size())
+    print("Input D: ", z.size())
     out = self.conv1(z)
-    #print("Conv1 D: ", out.size())
+    print("Conv1 D: ", out.size())
     out = self.relu(out)
     out = self.dropout(out)
     out = self.conv3(out)
-    #print("Conv2 D: ", out.size())
+    print("Conv2 D: ", out.size())
     out = self.relu(out)
     out = self.conv4(out) 
-    #print("Conv3 D: ", z.size())
+    print("Conv3 D: ", z.size())
     w = self.sigmoid(out)
-    #print("Output D: ", w.size())
-    return w.permute(0, 2, 1)
+    print("Output D: ", w.size())
+    return w #.permute(0, 2, 1)
     
 class ConvAE(nn.Module):
   def __init__(self, input_dim, latent_size): #(1, 32)

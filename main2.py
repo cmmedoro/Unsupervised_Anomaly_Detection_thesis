@@ -56,7 +56,9 @@ from sklearn import preprocessing
 x = attack.values 
 x_scaled = min_max_scaler.transform(x)
 attack = pd.DataFrame(x_scaled)
-
+#The following two lines for univariate usad
+normal = normal.loc[:, 0]
+attack = attack.loc[:, 0]
 window_size = args.train_window #9 ---> for better reconstruction #12
 
 windows_normal=normal.values[np.arange(window_size)[None, :] + np.arange(normal.shape[0]-window_size)[:, None]]
@@ -71,7 +73,7 @@ BATCH_SIZE = args.batch_size
 N_EPOCHS = args.epochs
 hidden_size = args.hidden_size
 
-w_size=windows_normal.shape[1]*windows_normal.shape[2] #12*51 = 612
+w_size=windows_normal.shape[1]*1#windows_normal.shape[2] #12*51 = 612
 z_size=int(windows_normal.shape[1]*hidden_size) # 12*100 = 1200
 
 #ENCODER:
@@ -105,10 +107,33 @@ history = training(N_EPOCHS,model,train_loader,val_loader)
 checkpoint_dir = args.save_checkpoint_dir
 
 #plot_history(history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_odin.npy', history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_uni_72wnd_40_hs.npy', history)
 
 torch.save({
             'encoder': model.encoder.state_dict(),
             'decoder1': model.decoder1.state_dict(),
             'decoder2': model.decoder2.state_dict()
             }, checkpoint_dir)  #"/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/usad_model_odin.pth"
+
+results=testing(model,test_loader)
+
+windows_labels=[]
+for i in range(len(labels)-window_size):
+    windows_labels.append(list(np.int_(labels[i:i+window_size])))
+
+y_test = [1.0 if (np.sum(window) > 0) else 0 for window in windows_labels ]
+
+y_pred=np.concatenate([torch.stack(results[:-1]).flatten().detach().cpu().numpy(),
+                              results[-1].flatten().detach().cpu().numpy()])
+
+threshold=ROC(y_test,y_pred)
+y_pred_ = np.zeros(y_pred.shape[0])
+y_pred_[y_pred >= threshold] = 1
+print(roc_auc_score(y_test, y_pred_))
+print(classification_report(y_test, y_pred_))
+print("OTHER METHOD: ")
+threshold = np.percentile(y_pred, 93)
+y_pred_ = np.zeros(y_pred.shape[0])
+y_pred_[y_pred >= threshold] = 1
+print(classification_report(y_test, y_pred_))
+print(roc_auc_score(y_test, y_pred_))

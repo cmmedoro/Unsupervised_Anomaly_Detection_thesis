@@ -147,10 +147,10 @@ if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     #train_recos_to_save = np.concatenate([torch.stack(train_recos[:-1]).flatten().detach().cpu().numpy(), train_recos[-1].flatten().detach().cpu().numpy()])
     #train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
     # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_21_05.npy', history_to_save) #/content/checkpoints er prove su drive
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_12wnd_31_05.npy', history_to_save) #/content/checkpoints er prove su drive
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 else:
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_21_05.npy', history)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_12wnd_31_05.npy', history)
     
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir

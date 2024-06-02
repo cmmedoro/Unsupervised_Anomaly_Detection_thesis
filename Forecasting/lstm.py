@@ -24,15 +24,15 @@ class LstmModel(nn.Module):
     self.fc = nn.Linear(latent_size, 1)
 
     # Initialize weights
-    self.init_weights()
-
+    #self.init_weights()
+  """
   def init_weights(self):
     for name, param in self.named_parameters():
       if 'weight' in name:
         nn.init.xavier_uniform_(param)
       elif 'bias' in name:
         nn.init.constant_(param, 0)
-    
+  """
   def forward(self, w):
     #print("Input: ", w.size())
     z, (h_n, c_n) = self.lstm(w)
@@ -47,7 +47,7 @@ class LstmModel(nn.Module):
 
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam):
     history = []
-    optimizer = opt_func(model.parameters(), eps = 1e-07)
+    optimizer = opt_func(model.parameters()) #eps = 1e-07 PRIMA
     criterion = nn.MSELoss().to(device)
     for epoch in range(epochs):
         model.train()
@@ -103,7 +103,7 @@ def testing(model, test_loader):
             forecast.append(w)
     return results, forecast
 
-def testing_sostitution(model, test, train_window, threshold):
+def testing_substitution(model, test, train_window, threshold):
    """
    Idea: instead of testing in the traditional way, at inference time we evaluate for each forecasted data point whether it can
    be associated to an anomaly or not. If we would predict an anomaly, we then proceed by substituting the meter_reading value
@@ -123,17 +123,19 @@ def testing_sostitution(model, test, train_window, threshold):
             break
         # gather input and output parts of the pattern
         seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
-        n_feat = seq_x.shape()[1]
+        gt_y = torch.from_numpy(np.array(seq_y)).float()
+        n_feat = seq_x.shape[1]
         window = seq_x.reshape(-1, train_window, n_feat)
-        next_ts = model(window)
-        if np.abs(next_ts - seq_y) >= threshold * next_ts:
+        window1 = torch.from_numpy(window).float().to(device)
+        next_ts = model(window1)
+        if np.abs(next_ts.item() - gt_y) >= threshold * next_ts.item():
            # This means I predict an anomaly
            predictions.append(1)
            # Need to substitute
-           building_data[end_ix] = next_ts
+           building_data[end_ix] = next_ts.item()
         else:
            predictions.append(0)  
-        forecasts.append(next_ts)
+        forecasts.append(next_ts.item())
    return predictions
                
    

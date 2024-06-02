@@ -278,7 +278,7 @@ elif args.do_test:
     print(roc_auc_score(y_test, y_pred_))
     print(classification_report(y_test, y_pred_))
     print("OTHER METHOD: ")
-    threshold = np.percentile(y_pred, 80)
+    threshold = np.percentile(y_pred, 93)
     y_pred_ = np.zeros(y_pred.shape[0])
     y_pred_[y_pred >= threshold] = 1
     print(classification_report(y_test, y_pred_))
