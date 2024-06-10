@@ -3,9 +3,10 @@ import torch.nn as nn
 from typing import Dict, List, Tuple
 from tqdm.auto import tqdm
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 
-from utils_ae import *
-device = get_default_device()
+#from utils_ae import *
+#device = get_default_device()
 
 
 class LstmModel(nn.Module):
@@ -21,7 +22,7 @@ class LstmModel(nn.Module):
         )
     self.dropout = nn.Dropout(0.2)
     self.relu = nn.ReLU()
-    self.fc = nn.Linear(latent_size, 1)
+    self.fc = nn.Linear(latent_size, in_size) #for swat: instead of 1 put in_size
 
     # Initialize weights
     #self.init_weights()
@@ -45,7 +46,7 @@ class LstmModel(nn.Module):
     return output
   
 
-def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam):
+def training(epochs, model, train_loader, val_loader, device, opt_func=torch.optim.Adam):
     history = []
     optimizer = opt_func(model.parameters()) #eps = 1e-07 PRIMA
     criterion = nn.MSELoss().to(device)
@@ -53,11 +54,11 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         model.train()
         train_loss = []
         for X_batch, y_batch in train_loader:
-          X_batch = to_device(X_batch,device)
-          y_batch = to_device(y_batch, device)
+          X_batch = X_batch.to(device) #to_device(X_batch,device)
+          y_batch = y_batch.to(device) #to_device(y_batch, device)
 
           z = model(X_batch)
-          loss = criterion(z.squeeze(), y_batch)
+          loss = criterion(z, y_batch) #z.squeeze() for lead
           train_loss.append(loss)
 
           optimizer.zero_grad()
@@ -68,8 +69,8 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         model.eval()
         batch_loss = []
         for X_batch, y_batch in val_loader:
-          X_batch = to_device(X_batch, device)
-          y_batch = to_device(y_batch, device)
+          X_batch = X_batch.to(device) #to_device(X_batch, device)
+          y_batch = y_batch.to(device) #to_device(y_batch, device)
           with torch.no_grad():
             z = model(X_batch)
             loss = criterion(z, y_batch)
@@ -86,24 +87,24 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
         history.append(result_train)
     return history
     
-def testing(model, test_loader):
+def testing(model, test_loader, device):
     results=[]
     forecast = []
     criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device)
     with torch.no_grad():
         for X_batch, y_batch in test_loader:
-            X_batch=to_device(X_batch,device)
-            y_batch = to_device(y_batch, device)
+            X_batch = X_batch.to(device) #to_device(X_batch,device)
+            y_batch = y_batch.to(device) #to_device(y_batch, device)
             w=model(X_batch)
             #batch_s = y_batch.reshape(-1, y_batch.size()[1] * y_batch.size()[2])
             #w_s = w.reshape(-1, w.size()[1] * w.size()[2])
             #results.append(criterion(w.squeeze(), y_batch))
-            results.append(torch.mean((y_batch.unsqueeze(1)-w)**2,axis=1))
+            results.append(torch.mean((y_batch-w)**2,axis=1)) #(y_batch.unsqueeze(1) for lead
             #results.append(torch.mean((batch_s-w_s)**2, axis = 1))
             forecast.append(w)
     return results, forecast
 
-def testing_substitution(model, test, train_window, threshold):
+def testing_substitution(model, test, train_window, threshold, device):
    """
    Idea: instead of testing in the traditional way, at inference time we evaluate for each forecasted data point whether it can
    be associated to an anomaly or not. If we would predict an anomaly, we then proceed by substituting the meter_reading value

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from utils_ae import *
+from utils_ae import get_default_device, to_device
 device = get_default_device()
 
 class Encoder(nn.Module):
@@ -48,14 +48,14 @@ class LinearAE(nn.Module):
   def training_step(self, batch, criterion, n):
     z = self.encoder(batch)
     w = self.decoder(z)
-    loss = criterion(w, batch) #torch.mean((batch-w)**2)
+    loss = criterion(w, batch) #torch.mean((batch-w)**2)#
     return loss
 
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
         z = self.encoder(batch)
         w = self.decoder(z)
-        loss = criterion(w, batch) #torch.mean((batch-w)**2)
+        loss = criterion(w, batch) #torch.mean((batch-w)**2) 
     return loss
         
   """def validation_epoch_end(self, outputs):
@@ -67,10 +67,10 @@ class LinearAE(nn.Module):
     print("Epoch [{}], val_loss1: {:.4f}".format(epoch, result))
 
 
-def evaluate(model, val_loader, criterion, n):
+def evaluate(model, val_loader, criterion, device, n):
     batch_loss = []
     for [batch] in val_loader:
-       batch = to_device(batch, device)
+       batch = batch.to(device) #to_device(batch, device)
        loss = model.validation_step(batch, criterion, n) 
        batch_loss.append(loss)
 
@@ -78,13 +78,14 @@ def evaluate(model, val_loader, criterion, n):
     return epoch_loss.item()
     
 
-def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
+def training(epochs, model, train_loader, val_loader, device, opt_func=torch.optim.Adam): 
     history = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     criterion = nn.MSELoss().to(device)#nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
+    #criterion = to_device(criterion, device)
     for epoch in range(epochs):
         for [batch] in train_loader:
-            batch=to_device(batch,device)
+            batch = batch.to(device)#to_device(batch,device)
             optimizer.zero_grad() 
 
             #Train AE
@@ -93,17 +94,17 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer.step()
             #optimizer.zero_grad()            
             
-        result = evaluate(model, val_loader, criterion, epoch+1) 
+        result = evaluate(model, val_loader, criterion, device, epoch+1) 
         model.epoch_end(epoch, result)
         history.append(result)
     return history
     
-def testing(model, test_loader):
+def testing(model, test_loader, device):
     results=[]
     reconstruction = []
     with torch.no_grad():
         for [batch] in test_loader: 
-            batch=to_device(batch,device)
+            batch = batch.to(device) #to_device(batch,device)
             w=model.decoder(model.encoder(batch))
             results.append(torch.mean((batch-w)**2,axis=1))
             reconstruction.append(w)

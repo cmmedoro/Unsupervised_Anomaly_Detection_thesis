@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from USAD.utils import *
-device = get_default_device()
+#from USAD.utils import *
+#device = get_default_device()
 #device = torch.device("cuda")
 
 class Encoder(nn.Module):
   def __init__(self, in_size, latent_size):
-    super().__init__()
+    super().__init__()  
     self.linear1 = nn.Linear(in_size, int(in_size/2))
     self.linear2 = nn.Linear(int(in_size/2), int(in_size/4))
     self.linear3 = nn.Linear(int(in_size/4), latent_size)
@@ -77,18 +77,19 @@ class UsadModel(nn.Module):
   def epoch_end(self, epoch, result):
     print("Epoch [{}], val_loss1: {:.4f}, val_loss2: {:.4f}".format(epoch, result['val_loss1'], result['val_loss2']))
     
-def evaluate(model, val_loader, n):
-    outputs = [model.validation_step(to_device(batch,device), n) for [batch] in val_loader]
+def evaluate(model, val_loader, device, n):
+    #outputs = [model.validation_step(to_device(batch,device), n) for [batch] in val_loader]
+    outputs = [model.validation_step(batch.to(device), n) for [batch] in val_loader]
     return model.validation_epoch_end(outputs)
 
-def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
+def training(epochs, model, train_loader, val_loader, device, opt_func=torch.optim.Adam): 
     history = []
     optimizer1 = opt_func(list(model.encoder.parameters())+list(model.decoder1.parameters()))
     optimizer2 = opt_func(list(model.encoder.parameters())+list(model.decoder2.parameters()))
     
     for epoch in range(epochs):
         for [batch] in train_loader:
-            batch=to_device(batch,device)
+            batch= batch.to(device)  #to_device(batch,device)
             
             #Train AE1
             loss1,loss2 = model.training_step(batch,epoch+1)
@@ -104,24 +105,24 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer2.zero_grad()
             
             
-        result = evaluate(model, val_loader, epoch+1)
+        result = evaluate(model, val_loader, device, epoch+1)
         model.epoch_end(epoch, result)
         history.append(result)
     return history
     
-def testing(model, test_loader, alpha=.5, beta=.5):
+def testing(model, test_loader, device, alpha=.5, beta=.5):
     # QUI: farsi restituire anche w1 e w2 per fare il confronto con i valori originali
     # Attenzione: w1 e w2 sono calcolati per batch, quindi bisogna poi metterli tutti insieme
     results=[]
     with torch.no_grad():
         for [batch] in test_loader: #N.B.: batch, w1, w2 sono tensori torch.tensor
-            batch=to_device(batch,device)
+            batch= batch.to(device) #to_device(batch,device)
             w1=model.decoder1(model.encoder(batch))
             w2=model.decoder2(model.encoder(w1))
             results.append(alpha*torch.mean((batch-w1)**2,axis=1)+beta*torch.mean((batch-w2)**2,axis=1))
     return results
 
-def testing_prova(model, test_loader, alpha=.5, beta=.5):
+def testing_prova(model, test_loader, device, alpha=.5, beta=.5):
     # QUI: farsi restituire anche w1 e w2 per fare il confronto con i valori originali
     # Attenzione: w1 e w2 sono calcolati per batch, quindi bisogna poi metterli tutti insieme
     # Problema: io sto passando il test_loader come sliding windows sovrapposte ---> perchè così funziona usad
@@ -131,7 +132,7 @@ def testing_prova(model, test_loader, alpha=.5, beta=.5):
     tensors_w2 = []
     with torch.no_grad():
         for [batch] in test_loader:
-            batch=to_device(batch,device)
+            batch=batch.to(device) #to_device(batch,device)
             w1=model.decoder1(model.encoder(batch))
             w2=model.decoder2(model.encoder(w1))
             tensors_w1.append(w1)
@@ -139,13 +140,13 @@ def testing_prova(model, test_loader, alpha=.5, beta=.5):
             results.append(alpha*torch.mean((batch-w1)**2,axis=1)+beta*torch.mean((batch-w2)**2,axis=1))
     return results, tensors_w1, tensors_w2
 
-def reconstruction(model, test_loader):
+def reconstruction(model, test_loader, device):
   # QUI: il test loader che viene passato è ottenuto con non-overlapping sliding window
   tensors_w1 = []
   tensors_w2 = []
   with torch.no_grad():
       for [batch] in test_loader: #N.B.: batch, w1, w2 sono tensori torch.tensor
-          batch=to_device(batch,device)
+          batch= batch.to(device) #to_device(batch,device)
           w1=model.decoder1(model.encoder(batch))
           w2=model.decoder2(model.encoder(w1))
           tensors_w1.append(w1)

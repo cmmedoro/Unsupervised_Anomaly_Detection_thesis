@@ -6,11 +6,12 @@ import torch.nn as nn
 import torch.utils.data as data_utils
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
 from postprocessing import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file
+from utils_ae import ROC
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -40,7 +41,12 @@ elif model_type == "vae":
     from vae import *
     from utils_ae import *
 
-device = get_default_device()
+#device = get_default_device()
+
+if torch.cuda.is_available():
+    device =  torch.device('cuda')
+else:
+    device = torch.device('cpu')
 
 #### Open the dataset ####
 energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
@@ -154,7 +160,7 @@ elif model_type == "vae":
     model = LstmVAE(n_channels, z_size, train_window)
 else:
     model = UsadModel(w_size, z_size)
-model = to_device(model, device)
+model = model.to(device) #to_device(model, device)
 print(model)
 
 if args.do_reconstruction:
@@ -172,15 +178,15 @@ if args.do_reconstruction:
         model.decoder.load_state_dict(checkpoint['decoder'])
 
     if model_type == "vae":
-        results, w, mu, logvar = testing(model, test_loader)
+        results, w, mu, logvar = testing(model, test_loader, device)
     else:
-        results, w = testing(model,test_loader)
+        results, w = testing(model,test_loader, device)
     print(len(w), w[0].size())
     # Reconstruction of validation set
     if model_type == "vae":
-        results_v, w_v, mu_v, logvar_v = testing(model, val_loader)
+        results_v, w_v, mu_v, logvar_v = testing(model, val_loader, device)
     else:
-        results_v, w_v = testing(model,val_loader)
+        results_v, w_v = testing(model,val_loader, device)
 
 
     res_dir = args.res_dir
@@ -196,33 +202,6 @@ if args.do_reconstruction:
     weight_overall = args.weights_overall
 
     predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
-    #print(predicted_df_test)
-
-    #scaler = MinMaxScaler(feature_range=(0,1))
-    #dfs_dict_1 = {}
-    #for building_id, gdf in test.groupby("building_id"):
-     #   gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
-      #  dfs_dict_1[building_id] = gdf
-    #predicted_df_test = pd.concat(dfs_dict_1.values())
-
-    #predicted_df_test['reconstruction'] = reconstruction
-
-    #predicted_df_test['relative_loss'] = np.abs((predicted_df_test['reconstruction']-predicted_df_test['meter_reading'])/predicted_df_test['reconstruction'])
-
-    #calculate threshold on relative loss quartiles but only on val, and in this case per building
-    #thresholds=np.array([])
-    #for building_id, gdf in predicted_df_test.groupby("building_id"):
-     #   val_mre_loss_building= gdf['relative_loss'].values
-      #  building_threshold = (np.percentile(val_mre_loss_building, 75)) + 1.5 *((np.percentile(val_mre_loss_building, 75))-(np.percentile(val_mre_loss_building, 25)))
-       # gdf['threshold']=building_threshold
-        #thresholds= np.append(thresholds, gdf['threshold'].values)
-    #print(thresholds.shape)
-    #predicted_df_test['threshold']= thresholds
-
-    #predicted_df_test['predicted_anomaly'] = predicted_df_test['relative_loss'] > predicted_df_test['threshold']
-    #predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(False,0)
-    #predicted_df_test['predicted_anomaly']=predicted_df_test['predicted_anomaly'].replace(True,1)
-
     predicted_df_test.index.names=['timestamp']
     predicted_df_test= predicted_df_test.reset_index()
     predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
@@ -231,6 +210,79 @@ if args.do_reconstruction:
 
     print(classification_report(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
     print(roc_auc_score(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
+
+    print("STATISTICHE MEDIE - PER BUILDING")
+    precisions = []
+    recalls = []
+    rocs = []
+    f1s = []
+    scores = {}
+    for building_id, gdf in predicted_df_test.groupby("building_id"):
+        prec = precision_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        rec = recall_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        roc = roc_auc_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        f1 = f1_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        precisions.append(prec)
+        recalls.append(rec)
+        rocs.append(roc)
+        f1s.append(f1)
+        #print("Building: ", building_id)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
+        scores[building_id] = [prec, rec, roc, f1]
+    print("Average scores by building")
+    print(np.mean(precisions))
+    print(np.mean(recalls))
+    print(np.mean(rocs))
+    print(np.mean(f1s))
+
+    
+
+    print("Highest score and corresponding building and building type")
+    highest_score = []
+    best_building = None
+    for bid, score in scores.items():
+        #print("Building: ", bid)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
+        if len(highest_score) == 0:
+            highest_score = score
+            best_building = bid
+        else:
+            p, re, ro, f = score
+            if  ro > highest_score[2] : #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
+                highest_score = score
+                best_building = bid
+    print("Building {} has the highest scores {}".format(best_building, highest_score))
+    print("Building type: ", predicted_df_test[predicted_df_test.building_id == best_building].primary_use.unique())
+
+    print("Lowest score and corresponding building and building type")
+    lowest_score = []
+    worst_building = None
+    for bid, score in scores.items():
+        #print("Building: ", bid)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
+        if len(lowest_score) == 0:
+            lowest_score = score
+            worst_building = bid
+        else:
+            p, re, ro, f = score
+            if  ro < lowest_score[2] : #p> lowest_score[0] and re > lowest_score[1] and and f > lowest_score[3]
+                lowest_score = score
+                worst_building = bid
+    print("Building {} has the lowest scores {}".format(worst_building, lowest_score))
+    print("Building type: ", predicted_df_test[predicted_df_test.building_id == worst_building].primary_use.unique())
+
+    print("EVALUATION: point anomalies VS Contextual")
+    predicted_df_test['anomaly_outlier'] = [1 if (el['anomaly']==1 and el['outliers']==1) else 0 for _ , el in predicted_df_test.iterrows()]
+    predicted_df_test['predicted_anomaly_outlier'] = [1 if (el['predicted_anomaly']==1 and el['outliers']==1) else 0 for _ , el in predicted_df_test.iterrows()]
+    predicted_df_test['anomaly_not_outlier'] = predicted_df_test['anomaly']-predicted_df_test['anomaly_outlier']
+    predicted_df_test['predicted_anomaly_not_outlier'] = predicted_df_test['predicted_anomaly']-predicted_df_test['predicted_anomaly_outlier']
+    print("Results for Outliers: ")
+    print(classification_report(predicted_df_test['anomaly_outlier'], predicted_df_test['predicted_anomaly_outlier']))
+    print(roc_auc_score(predicted_df_test['anomaly_outlier'], predicted_df_test['predicted_anomaly_outlier']))
+    print("Results for contextual anomalies: ")
+    print(classification_report(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
+    print(roc_auc_score(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
+
 
 
 elif args.do_test:
@@ -253,9 +305,11 @@ elif args.do_test:
     #else:
      #   results = testing(model, test_loader)
     if model_type == "vae":
-        results, w, mu, logvar = testing(model, test_loader)
+        results, w, mu, logvar = testing(model, test_loader, device)
+    elif model_type == "usad":
+        results = testing(model, test_loader, device)
     else:
-        results, w = testing(model,test_loader)
+        results, w = testing(model,test_loader, device)
 
 
     # Qui va ad ottenere le label per ogni finestra
@@ -283,6 +337,8 @@ elif args.do_test:
     y_pred_[y_pred >= threshold] = 1
     print(classification_report(y_test, y_pred_))
     print(roc_auc_score(y_test, y_pred_))
+
+    print("STATISTICHE MEDIE - PER BUILDING")
 
 
 

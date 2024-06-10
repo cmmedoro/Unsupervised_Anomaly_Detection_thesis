@@ -92,6 +92,9 @@ def get_anomaly_dataset(test, total_w1, total_w2):
   dfs_dict_1 = {}
   for building_id, gdf in test.groupby("building_id"):
       gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
+      upper_outlier_value=(np.percentile(gdf['meter_reading'].values, 75)) + 1.5 *((np.percentile(gdf['meter_reading'].values, 75))-(np.percentile(gdf['meter_reading'].values, 25)))
+      lower_outlier_value = (np.percentile(gdf['meter_reading'].values, 25)) - 1.5 *((np.percentile(gdf['meter_reading'].values, 75))-(np.percentile(gdf['meter_reading'].values, 25)))
+      gdf['outliers'] = [1 if (el<lower_outlier_value or el>upper_outlier_value) else 0 for el in gdf['meter_reading'].values]
       dfs_dict_1[building_id] = gdf
   predicted_df_test = pd.concat(dfs_dict_1.values())
   predicted_df_test['reconstruction1'] = total_w1
@@ -140,6 +143,9 @@ def get_predicted_dataset(dataset, reconstruction):
   dfs_dict_1 = {}
   for building_id, gdf in dataset.groupby("building_id"):
       gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
+      upper_outlier_value=(np.percentile(gdf['meter_reading'].values, 75)) + 1.5 *((np.percentile(gdf['meter_reading'].values, 75))-(np.percentile(gdf['meter_reading'].values, 25)))
+      lower_outlier_value = (np.percentile(gdf['meter_reading'].values, 25)) - 1.5 *((np.percentile(gdf['meter_reading'].values, 75))-(np.percentile(gdf['meter_reading'].values, 25)))
+      gdf['outliers'] = [1 if (el<lower_outlier_value or el>upper_outlier_value) else 0 for el in gdf['meter_reading'].values]
       dfs_dict_1[building_id] = gdf
   predicted_df = pd.concat(dfs_dict_1.values())
   predicted_df['reconstruction'] = reconstruction

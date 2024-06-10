@@ -40,7 +40,11 @@ elif model_type == "vae":
     from vae import *
     from utils_ae import *
 
-device = get_default_device()
+
+if torch.cuda.is_available():
+    device =  torch.device('cuda')
+else:
+    device = torch.device('cpu')
 
 #### Open the dataset ####
 # Original dataset
@@ -127,7 +131,7 @@ if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
 if model_type == "lstm_ae":
     model = LstmAE(n_channels, z_size, train_window)
 elif model_type == "conv_ae":
-    model = ConvAE(n_channels, z_size)
+    model = ConvAE(n_channels, z_size) #n_channels
 elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
 elif model_type == "vae":
@@ -136,21 +140,21 @@ else:
     model = UsadModel(w_size, z_size)
 
 print(device)
-model = to_device(model, device)
+model = model.to(device) #to_device(model, device)
 print(model)
 
 # Start training
-history = training(N_EPOCHS, model, train_loader, val_loader)
+history = training(N_EPOCHS, model, train_loader, val_loader, device)
 print(history)
 if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
     #train_recos_to_save = np.concatenate([torch.stack(train_recos[:-1]).flatten().detach().cpu().numpy(), train_recos[-1].flatten().detach().cpu().numpy()])
     #train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
     # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_12wnd_31_05.npy', history_to_save) #/content/checkpoints er prove su drive
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_lead_09_06.npy', history_to_save) #/content/checkpoints er prove su drive
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 else:
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_12wnd_31_05.npy', history)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_lead_09_06.npy', history)
     
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir

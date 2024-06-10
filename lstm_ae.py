@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from utils_ae import *
-device = get_default_device()
+#from utils_ae import *
+#device = get_default_device()
 
 class Encoder(nn.Module):
   def __init__(self, in_size, latent_size): 
@@ -66,19 +66,14 @@ class LstmAE(nn.Module):
         w = self.decoder(z)
         loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
     return loss
-        
-  """def validation_epoch_end(self, outputs):
-    batch_losses = [x for x in outputs]
-    epoch_loss = torch.stack(batch_losses).mean()
-    return {'val_loss': epoch_loss.item()}"""
     
   def epoch_end(self, epoch, result, result_train):
     print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}".format(epoch, result_train, result))
     
-def evaluate(model, val_loader, criterion, n):
+def evaluate(model, val_loader, criterion, device, n):
     batch_loss = []
     for [batch] in val_loader:
-       batch = to_device(batch, device)
+       batch = batch.to(device) # to_device(batch, device)
        loss = model.validation_step(batch, criterion, n) 
        batch_loss.append(loss)
 
@@ -86,14 +81,14 @@ def evaluate(model, val_loader, criterion, n):
     return epoch_loss
 
 
-def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam): 
+def training(epochs, model, train_loader, val_loader, device, opt_func=torch.optim.Adam): 
     history = []
     optimizer = opt_func(list(model.encoder.parameters())+list(model.decoder.parameters()))
     #criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
     criterion = nn.L1Loss().to(device)
     for epoch in range(epochs):
         for [batch] in train_loader:
-            batch=to_device(batch,device)
+            batch = batch.to(device) #to_device(batch,device)
             optimizer.zero_grad()
 
             loss = model.training_step(batch, criterion, epoch+1)
@@ -102,20 +97,20 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             #optimizer.zero_grad()
             
             
-        result= evaluate(model, val_loader, criterion, epoch+1)
-        result_train = evaluate(model, train_loader, criterion, epoch+1)
+        result= evaluate(model, val_loader, criterion, device, epoch+1)
+        result_train = evaluate(model, train_loader, criterion, device, epoch+1)
         model.epoch_end(epoch, result, result_train)
         #model.epoch_end(epoch, result)
         history.append(result)
     return history 
     
-def testing(model, test_loader):
+def testing(model, test_loader, device):
     results=[]
     reconstruction = []
     criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device)
     with torch.no_grad():
         for [batch] in test_loader: 
-            batch=to_device(batch,device)
+            batch = batch.to(device) #to_device(batch,device)
             w=model.decoder(model.encoder(batch))
             # Need to squeeze the batch and reconstruction to compute correctly the anomaly score
             # This because the input and the reconstruction are 3-D tensors, so we need to turn them into 2-D
