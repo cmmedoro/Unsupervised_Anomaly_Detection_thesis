@@ -12,8 +12,8 @@ from postprocessing import *
 import plotly.graph_objects as go
 #from usad_conv import *
 import parser_file
-from linear_ae import *
-#from convolutional_ae import *
+#from linear_ae import *
+from convolutional_ae import *
 #from lstm_ae import *
 #from Forecasting.lstm import *
 from utils_ae import ROC
@@ -65,8 +65,8 @@ x = attack.values
 x_scaled = min_max_scaler.transform(x)
 attack = pd.DataFrame(x_scaled)
 #The following two lines for univariate usad
-#normal = normal.loc[:, 0]
-#attack = attack.loc[:, 0]
+normal = normal.loc[:, 0]
+attack = attack.loc[:, 0]
 window_size = args.train_window #9 ---> for better reconstruction #12
 
 windows_normal=normal.values[np.arange(window_size)[None, :] + np.arange(normal.shape[0]-window_size)[:, None]]
@@ -82,18 +82,18 @@ import torch.utils.data as data_utils
 BATCH_SIZE = args.batch_size
 N_EPOCHS = args.epochs
 hidden_size = args.hidden_size
-#batch, wnd = windows_normal.shape
-#windows_normal = windows_normal.reshape(batch, wnd, 1)
+batch, wnd = windows_normal.shape
+windows_normal = windows_normal.reshape(batch, wnd, 1)
 #y_windows_normal = y_windows_normal.reshape(batch, 1)
-#batch, wnd = windows_attack.shape
-#windows_attack = windows_attack.reshape(batch, wnd, 1)
+batch, wnd = windows_attack.shape
+windows_attack = windows_attack.reshape(batch, wnd, 1)
 #y_windows_attack = y_windows_attack.reshape(batch, 1)
 print(windows_normal.shape)
 print(y_windows_normal.shape)
 #batch, window_len, n_channels = windows_normal.shape
 n_channels = 1
 
-w_size=windows_normal.shape[1]*windows_normal.shape[2] #12*51 = 612
+w_size=windows_normal.shape[1]*1#windows_normal.shape[2] #12*51 = 612
 z_size=int(windows_normal.shape[1]*hidden_size) # 12*100 = 1200
 
 #ENCODER:
@@ -138,8 +138,8 @@ print("Define model")
 print(w_size)
 print(z_size)
 #model = UsadModel(w_size, z_size)
-#z_size = 32
-model = LinearAE(w_size, z_size)
+z_size = 32
+model = ConvAE(n_channels, z_size)
 print(model)
 #model.to(device)
 model = model.to(device) #to_device(model,device)
@@ -151,10 +151,10 @@ checkpoint_dir = args.save_checkpoint_dir
 #plot_history(history)
 if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae" or model_type == "lstm":
     history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_swat_multi_ordered_05_06.npy', history_to_save) #/content/checkpoints er prove su drive
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_swat_uni_13_96.npy', history_to_save) #/content/checkpoints er prove su drive
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 else:
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_swat_multi_ordered_05_06.npy', history)
+    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_swat_uni_13_06.npy', history)
 #np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_swat_uni_40_hs_to_device_torch.npy', history)
 
 if model_type != "lstm":

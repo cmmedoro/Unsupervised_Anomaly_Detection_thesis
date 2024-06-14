@@ -22,7 +22,7 @@ class LstmModel(nn.Module):
         )
     self.dropout = nn.Dropout(0.2)
     self.relu = nn.ReLU()
-    self.fc = nn.Linear(latent_size, in_size) #for swat: instead of 1 put in_size
+    self.fc = nn.Linear(latent_size, 1) #for swat: instead of 1 put in_size
 
     # Initialize weights
     #self.init_weights()
@@ -58,7 +58,7 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
           y_batch = y_batch.to(device) #to_device(y_batch, device)
 
           z = model(X_batch)
-          loss = criterion(z, y_batch) #z.squeeze() for lead
+          loss = criterion(z.squeeze(), y_batch) #z.squeeze() for lead
           train_loss.append(loss)
 
           optimizer.zero_grad()
@@ -99,7 +99,7 @@ def testing(model, test_loader, device):
             #batch_s = y_batch.reshape(-1, y_batch.size()[1] * y_batch.size()[2])
             #w_s = w.reshape(-1, w.size()[1] * w.size()[2])
             #results.append(criterion(w.squeeze(), y_batch))
-            results.append(torch.mean((y_batch-w)**2,axis=1)) #(y_batch.unsqueeze(1) for lead
+            results.append(torch.mean((y_batch.unsqueeze(1)-w)**2,axis=1)) #(y_batch.unsqueeze(1) for lead
             #results.append(torch.mean((batch_s-w_s)**2, axis = 1))
             forecast.append(w)
     return results, forecast

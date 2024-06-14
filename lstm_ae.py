@@ -87,21 +87,23 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
     #criterion = nn.MSELoss().to(device) #nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
     criterion = nn.L1Loss().to(device)
     for epoch in range(epochs):
+        train_loss = []
         for [batch] in train_loader:
             batch = batch.to(device) #to_device(batch,device)
             optimizer.zero_grad()
 
             loss = model.training_step(batch, criterion, epoch+1)
+            train_loss.append(loss)
             loss.backward()
             optimizer.step()
             #optimizer.zero_grad()
-            
+        result_train = torch.stack(train_loss).mean()    
             
         result= evaluate(model, val_loader, criterion, device, epoch+1)
-        result_train = evaluate(model, train_loader, criterion, device, epoch+1)
+        #result_train = evaluate(model, train_loader, criterion, device, epoch+1)
         model.epoch_end(epoch, result, result_train)
         #model.epoch_end(epoch, result)
-        history.append(result)
+        history.append((result_train, result))
     return history 
     
 def testing(model, test_loader, device):

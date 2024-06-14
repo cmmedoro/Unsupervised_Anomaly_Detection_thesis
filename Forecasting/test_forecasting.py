@@ -5,21 +5,25 @@ import torch.nn as nn
 import torch.utils.data as data_utils
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.metrics import classification_report, roc_auc_score, recall_score, f1_score, precision_score
 from postprocessing_forecast import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file
 import warnings
 warnings.filterwarnings('ignore')
-from utils_ae import *
+from utils_ae import ROC
 from lstm import *
 
 args = parser_file.parse_arguments()
 
 model_type = args.model_type    
 
-device = get_default_device()
+#device = get_default_device()
+if torch.cuda.is_available():
+    device =  torch.device('cuda')
+else:
+    device = torch.device('cpu')
 #### Open the dataset ####
 energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
 #energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
@@ -100,16 +104,16 @@ test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_nu
 z_size = 32
 # Create the model and send it on the gpu device
 model = LstmModel(n_channels, 32)
-model = to_device(model, device)
+model = model.to(device) #to_device(model, device)
 print(model)
 
 checkpoint_dir = args.checkpoint_dir
 checkpoint = torch.load(checkpoint_dir) #map_location = torch.device('cpu')
 model.load_state_dict(checkpoint)
 
-results, forecast = testing(model, test_loader)
+results, forecast = testing(model, test_loader, device)
 # On validation set
-results_v, forecast_v = testing(model, val_loader)
+results_v, forecast_v = testing(model, val_loader, device)
 
 if args.do_reconstruction: 
     forecast_test = np.concatenate([torch.stack(forecast[:-1]).flatten().detach().cpu().numpy(), forecast[-1].flatten().detach().cpu().numpy()])
@@ -134,6 +138,78 @@ if args.do_reconstruction:
 
     print(classification_report(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
     print(roc_auc_score(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
+
+    print("STATISTICHE MEDIE - PER BUILDING")
+    precisions = []
+    recalls = []
+    rocs = []
+    f1s = []
+    scores = {}
+    for building_id, gdf in predicted_df_test.groupby("building_id"):
+        prec = precision_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        rec = recall_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        roc = roc_auc_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        f1 = f1_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        precisions.append(prec)
+        recalls.append(rec)
+        rocs.append(roc)
+        f1s.append(f1)
+        #print("Building: ", building_id)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
+        scores[building_id] = [prec, rec, roc, f1]
+    print("Average scores by building")
+    print(np.mean(precisions))
+    print(np.mean(recalls))
+    print(np.mean(rocs))
+    print(np.mean(f1s))
+
+    
+
+    print("Highest score and corresponding building and building type")
+    highest_score = []
+    best_building = None
+    for bid, score in scores.items():
+        #print("Building: ", bid)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
+        if len(highest_score) == 0:
+            highest_score = score
+            best_building = bid
+        else:
+            p, re, ro, f = score
+            if  ro > highest_score[2] : #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
+                highest_score = score
+                best_building = bid
+    print("Building {} has the highest scores {}".format(best_building, highest_score))
+    print("Building type: ", predicted_df_test[predicted_df_test.building_id == best_building].primary_use.unique())
+
+    print("Lowest score and corresponding building and building type")
+    lowest_score = []
+    worst_building = None
+    for bid, score in scores.items():
+        #print("Building: ", bid)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
+        if len(lowest_score) == 0:
+            lowest_score = score
+            worst_building = bid
+        else:
+            p, re, ro, f = score
+            if  ro < lowest_score[2] : #p> lowest_score[0] and re > lowest_score[1] and and f > lowest_score[3]
+                lowest_score = score
+                worst_building = bid
+    print("Building {} has the lowest scores {}".format(worst_building, lowest_score))
+    print("Building type: ", predicted_df_test[predicted_df_test.building_id == worst_building].primary_use.unique())
+
+    print("EVALUATION: point anomalies VS Contextual")
+    predicted_df_test['anomaly_outlier'] = [1 if (el['anomaly']==1 and el['outliers']==1) else 0 for _ , el in predicted_df_test.iterrows()]
+    predicted_df_test['predicted_anomaly_outlier'] = [1 if (el['predicted_anomaly']==1 and el['outliers']==1) else 0 for _ , el in predicted_df_test.iterrows()]
+    predicted_df_test['anomaly_not_outlier'] = predicted_df_test['anomaly']-predicted_df_test['anomaly_outlier']
+    predicted_df_test['predicted_anomaly_not_outlier'] = predicted_df_test['predicted_anomaly']-predicted_df_test['predicted_anomaly_outlier']
+    print("Results for Outliers: ")
+    print(classification_report(predicted_df_test['anomaly_outlier'], predicted_df_test['predicted_anomaly_outlier']))
+    print(roc_auc_score(predicted_df_test['anomaly_outlier'], predicted_df_test['predicted_anomaly_outlier']))
+    print("Results for contextual anomalies: ")
+    print(classification_report(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
+    print(roc_auc_score(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
 
 
 print("Results based on the anomaly score")

@@ -63,8 +63,9 @@ class LinearAE(nn.Module):
     epoch_loss1 = torch.stack(batch_losses1).mean()
     return {'val_loss1': epoch_loss1.item()}"""
     
-  def epoch_end(self, epoch, result):
-    print("Epoch [{}], val_loss1: {:.4f}".format(epoch, result))
+  def epoch_end(self, epoch, result, result_train):
+    print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}".format(epoch, result_train, result))
+    #print("Epoch [{}], val_loss1: {:.4f}".format(epoch, result))
 
 
 def evaluate(model, val_loader, criterion, device, n):
@@ -84,19 +85,21 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
     criterion = nn.MSELoss().to(device)#nn.KLDivLoss(reduction="batchmean").to(device) #nn.MSELoss().to(device)
     #criterion = to_device(criterion, device)
     for epoch in range(epochs):
+        train_loss = []
         for [batch] in train_loader:
             batch = batch.to(device)#to_device(batch,device)
             optimizer.zero_grad() 
 
             #Train AE
             loss = model.training_step(batch, criterion, epoch+1)
+            train_loss.append(loss)
             loss.backward()
             optimizer.step()
             #optimizer.zero_grad()            
-            
+        result_train = torch.stack(train_loss).mean()     
         result = evaluate(model, val_loader, criterion, device, epoch+1) 
-        model.epoch_end(epoch, result)
-        history.append(result)
+        model.epoch_end(epoch, result, result_train)
+        history.append((result_train, result))
     return history
     
 def testing(model, test_loader, device):

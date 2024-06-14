@@ -139,6 +139,21 @@ def create_diff_lag_features(dataframe, list_lags):
   df.update(df[diff_cols].fillna(0))
   return df
 
+def add_rolling_feature(energy_df, window=3):
+    group_df = energy_df.groupby('building_id') #consider this for building_id
+    cols = ['meter_reading']
+    # Define rolling windows: here min_periods = minimum number of observations in window required to have a value
+    rolled = group_df[cols].rolling(window=window, min_periods=0)
+    lag_mean = rolled.mean().reset_index().astype(np.float16)
+    lag_std = rolled.std().reset_index().astype(np.float16)
+    lag_mdn = rolled.median().reset_index().astype(np.float16)
+    for col in cols:
+        energy_df[f'{col}_mean_lag{window}'] = lag_mean[col]
+        energy_df[f'{col}_std_lag{window}'] = lag_std[col]
+        energy_df[f'{col}_mdn_lag{window}'] = lag_mdn[col]
+        energy_df.update(energy_df[[f'{col}_mean_lag{window}', f'{col}_std_lag{window}', f'{col}_mdn_lag{window}']].fillna(0))
+    return energy_df
+
 ### SPLIT THE DATASET IN TRAIN, VAL, TEST ###
 
 def split(dataframe, buildings_id):
@@ -204,8 +219,8 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168']] = scaler.fit_transform(gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature','weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168']])
-      building_data = np.array(gdf[['meter_reading', 'resid','sea_level_pressure', 'air_temperature', 'weekday_y', 'weekday_x','is_holiday', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168', 'lag_-168']]).astype(float) #, 
+      gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']] = scaler.fit_transform(gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature','weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']])
+      building_data = np.array(gdf[['meter_reading', 'resid','sea_level_pressure', 'air_temperature', 'weekday_y', 'weekday_x','is_holiday', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168', 'lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']]).astype(float) #, 
       for i in range(len(building_data)):
         # find the end of this sequence
         end_ix = i + time_steps

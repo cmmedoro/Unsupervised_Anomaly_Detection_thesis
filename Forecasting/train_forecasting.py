@@ -11,14 +11,18 @@ import torch.utils.data as data_utils
 import parser_file
 import warnings
 warnings.filterwarnings('ignore')
-from utils_ae import *
+from utils_ae import ROC
 from lstm import *
 
 args = parser_file.parse_arguments()
 
 model_type = args.model_type    
 
-device = get_default_device()
+#device = get_default_device()
+if torch.cuda.is_available():
+    device =  torch.device('cuda')
+else:
+    device = torch.device('cpu')
 
 #### Open the dataset ####
 print("Inizio")
@@ -72,6 +76,8 @@ if args.do_multivariate:
     # datapoint to a previous one, whereas when we pass a negative value we relate the datapoint to a future observation
     lags = [-1, 24, -24, 168, -168]
     residui_df = create_diff_lag_features(residui_df, lags)
+    residui_df = add_rolling_feature(residui_df, 12)
+    residui_df = add_rolling_feature(residui_df, 24)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -110,11 +116,11 @@ model = LstmModel(n_channels, 32)
 
 
 print(device)
-model = to_device(model, device)
+model = model.to(device) #to_device(model, device)
 print(model)
 
 # Start training
-history = training(N_EPOCHS, model, train_loader, val_loader)
+history = training(N_EPOCHS, model, train_loader, val_loader, device)
 print(history)
 
 
@@ -123,5 +129,5 @@ checkpoint_path = args.save_checkpoint_dir
 torch.save(model.state_dict(), checkpoint_path)
 
 history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forec_wo_init_40_28_05.npy', history_to_save)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forec_multi_output1feat_40_14_06.npy', history_to_save)
 #/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis

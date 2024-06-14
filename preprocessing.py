@@ -127,6 +127,21 @@ def create_diff_lag_features(dataframe, list_lags):
   df.update(df[diff_cols].fillna(0))
   return df
 
+def add_rolling_feature(energy_df, window=3):
+    group_df = energy_df.groupby('building_id') #consider this for building_id
+    cols = ['meter_reading']
+    # Define rolling windows: here min_periods = minimum number of observations in window required to have a value
+    rolled = group_df[cols].rolling(window=window, min_periods=0)
+    lag_mean = rolled.mean().reset_index().astype(np.float16)
+    lag_std = rolled.std().reset_index().astype(np.float16)
+    lag_mdn = rolled.median().reset_index().astype(np.float16)
+    for col in cols:
+        energy_df[f'{col}_mean_lag{window}'] = lag_mean[col]
+        energy_df[f'{col}_std_lag{window}'] = lag_std[col]
+        energy_df[f'{col}_mdn_lag{window}'] = lag_mdn[col]
+        energy_df.update(energy_df[[f'{col}_mean_lag{window}', f'{col}_std_lag{window}', f'{col}_mdn_lag{window}']].fillna(0))
+    return energy_df
+
 ### SPLIT THE DATASET IN TRAIN, VAL, TEST ###
 
 def split(dataframe, buildings_id):
