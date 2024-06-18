@@ -129,5 +129,5 @@ checkpoint_path = args.save_checkpoint_dir
 torch.save(model.state_dict(), checkpoint_path)
 
 history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forec_multi_output1feat_40_14_06.npy', history_to_save)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm_forec_multi_outputMultiFeat_40_14_06.npy', history_to_save)
 #/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis

@@ -16,43 +16,43 @@ class Encoder(nn.Module):
     self.relu = nn.ReLU(True)
     self.dropout = nn.Dropout(p=0.2)
   def forward(self, w):
-    print("Input E: ", w.size())
+    #print("Input E: ", w.size())
     out = self.conv1(w.permute(0, 2, 1)) #w #x.permute(0, 2, 1) ---> needed because conv1d wants input in form (batch, n_features, window_size)
-    print("Conv1 E: ", out.size())
+    #print("Conv1 E: ", out.size())
     out = self.relu(out)
     out = self.dropout(out)
     out = self.conv2(out)
-    print("Conv2 E: ", out.size())
+    #print("Conv2 E: ", out.size())
     out = self.relu(out)
     out = self.conv3(out)
-    print("Conv3 E: ", out.size())
+    #print("Conv3 E: ", out.size())
     z = self.relu(out)
-    print("Output E: ", z.size())
+    #print("Output E: ", z.size())
     return z
     
 class Decoder(nn.Module):
   def __init__(self, latent_size, out_size): #(32, 1)
     super().__init__()
-    self.conv1 = nn.ConvTranspose1d(latent_size//4, latent_size//2, 7, 2, 3) #output_padding = 1
+    self.conv1 = nn.ConvTranspose1d(latent_size//4, latent_size//2, 7, 2, 3, 1) #output_padding = 1
     self.conv3 = nn.ConvTranspose1d(latent_size//2, latent_size, 7, 2, 3, 1)
-    self.conv4 = nn.ConvTranspose1d(latent_size, out_size, 7, 2, 3, 1)
+    self.conv4 = nn.ConvTranspose1d(latent_size, 1, 7, 2, 3, 1) #out_size
     self.relu = nn.ReLU(True)
     self.dropout = nn.Dropout(p=0.2)
     self.sigmoid = nn.Sigmoid()
         
   def forward(self, z):
-    print("Input D: ", z.size())
+    #print("Input D: ", z.size())
     out = self.conv1(z)
-    print("Conv1 D: ", out.size())
+    #print("Conv1 D: ", out.size())
     out = self.relu(out)
     out = self.dropout(out)
     out = self.conv3(out)
-    print("Conv2 D: ", out.size())
+    #print("Conv2 D: ", out.size())
     out = self.relu(out)
     out = self.conv4(out) 
-    print("Conv3 D: ", z.size())
+    #print("Conv3 D: ", z.size())
     w = self.sigmoid(out)
-    print("Output D: ", w.size())
+    #print("Output D: ", w.size())
     return w.permute(0, 2, 1)
     
 class ConvAE(nn.Module):
@@ -64,8 +64,8 @@ class ConvAE(nn.Module):
   def training_step(self, batch, criterion, n):
     z = self.encoder(batch)
     w = self.decoder(z)
-    print("W_loss: ", w.size())
-    print("Batch_loss: ", batch.size())
+    #print("W_loss: ", w.size())
+    #print("Batch_loss: ", batch.size())
     loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
     return loss
 
@@ -122,7 +122,8 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
         result = evaluate(model, val_loader, criterion, device, epoch+1) #
         model.epoch_end(epoch, result, result_train)
         #eval_output.append(w)
-        history.append((result_train, result))
+        res = result_train.item()
+        history.append((res, result.item()))
     return history#, eval_output
     
 def testing(model, test_loader, device):
@@ -133,8 +134,13 @@ def testing(model, test_loader, device):
         for [batch] in test_loader: 
             batch = batch.to(device) #to_device(batch,device)
             w=model.decoder(model.encoder(batch))
-            batch_s = batch.reshape(-1, batch.size()[1] * batch.size()[2])
-            w_s = w.reshape(-1, w.size()[1] * w.size()[2])
+            #print("Batch: ", batch.size())
+            #print("W: ", w.size())
+            #batch_s = batch.reshape(-1, batch.size()[1] * batch.size()[2])
+            #w_s = w.reshape(-1, w.size()[1] * w.size()[2])
+            batch_s = batch[:, :, 0]
+            batch_s = batch_s.reshape(batch.size()[0], batch.size()[1], 1)
+            w_s = w
             #results.append(criterion(w, batch))
             results.append(torch.mean((batch_s-w_s)**2,axis=1))
             reconstruction.append(w)

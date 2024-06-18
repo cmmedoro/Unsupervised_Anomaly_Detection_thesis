@@ -248,5 +248,21 @@ def anomaly_detection(predicted_df_val, predicted_df_test, method_nr, percentile
   predicted_df['predicted_anomaly']=predicted_df['predicted_anomaly'].replace(True,1)
   return predicted_df
 
+### CREATION OF DATASET FOR ANOMALY SCORE ASSESSMENT ###
+def get_predicted_anomaly_score(dataset, pred_anomalies, new_anomalies):
+  # This will be used both for the test set and for the validation set, which is going to be used as reference for thresholds in some cases
+  scaler = MinMaxScaler(feature_range=(0,1))
+  dfs_dict_1 = {}
+  for building_id, gdf in dataset.groupby("building_id"):
+      gdf[['meter_reading']]=scaler.fit_transform(gdf[['meter_reading']])
+      upper_outlier_value=(np.percentile(gdf['meter_reading'].values, 75)) + 1.5 *((np.percentile(gdf['meter_reading'].values, 75))-(np.percentile(gdf['meter_reading'].values, 25)))
+      lower_outlier_value = (np.percentile(gdf['meter_reading'].values, 25)) - 1.5 *((np.percentile(gdf['meter_reading'].values, 75))-(np.percentile(gdf['meter_reading'].values, 25)))
+      gdf['outliers'] = [1 if (el<lower_outlier_value or el>upper_outlier_value) else 0 for el in gdf['meter_reading'].values]
+      dfs_dict_1[building_id] = gdf
+  predicted_df = pd.concat(dfs_dict_1.values())
+  predicted_df['predictions'] = pred_anomalies
+  predicted_df['new_anomalies'] = new_anomalies
+  return predicted_df
+
 
   

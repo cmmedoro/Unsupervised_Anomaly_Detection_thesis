@@ -65,6 +65,8 @@ if args.do_multivariate:
     residui_df = add_trig_resid(residui_df)
     lags = [-1, 24, -24, 168, -168]
     residui_df = create_diff_lag_features(residui_df, lags)
+    residui_df = add_rolling_feature(residui_df, 12)
+    residui_df = add_rolling_feature(residui_df, 24)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -127,8 +129,11 @@ if args.do_reconstruction:
     percentile = args.percentile
     weight_overall = args.weights_overall
 
+    print("METHOD: ", threshold_method)
+
     predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
     print(predicted_df_test.columns)
+    # The following two lines need to be commented in the multivariate case
     predicted_df_test.index.names=['timestamp']
     predicted_df_test= predicted_df_test.reset_index()
 

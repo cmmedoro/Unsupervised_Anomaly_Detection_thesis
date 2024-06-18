@@ -99,7 +99,8 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
         result_train = torch.stack(train_loss).mean()     
         result = evaluate(model, val_loader, criterion, device, epoch+1) 
         model.epoch_end(epoch, result, result_train)
-        history.append((result_train, result))
+        res = result_train.item()
+        history.append((res, result))
     return history
     
 def testing(model, test_loader, device):

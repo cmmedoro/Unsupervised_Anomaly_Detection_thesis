@@ -85,9 +85,11 @@ print(train.columns)
 if args.do_multivariate:
     residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'resid']]
-    lags = [1, -1]
+    lags = [1, -1, 24, -24, 168, -168] #[1, -1]
     residui_df = create_diff_lag_features(residui_df, lags)
     residui_df = add_trig_resid(residui_df)
+    residui_df = add_rolling_feature(residui_df, 12)
+    residui_df = add_rolling_feature(residui_df, 24)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -146,16 +148,7 @@ print(model)
 # Start training
 history = training(N_EPOCHS, model, train_loader, val_loader, device)
 print(history)
-if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
-    history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
-    #train_recos_to_save = np.concatenate([torch.stack(train_recos[:-1]).flatten().detach().cpu().numpy(), train_recos[-1].flatten().detach().cpu().numpy()])
-    #train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
-    # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_lead_09_06.npy', history_to_save) #/content/checkpoints er prove su drive
-    #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
-else:
-    np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_usad_lead_09_06.npy', history)
-    
+  
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
 if model_type.startswith("usad"):
@@ -169,3 +162,14 @@ else:
             'encoder': model.encoder.state_dict(),
             'decoder': model.decoder.state_dict()
             }, checkpoint_path) # the path should be set in the run.job file
+
+#if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
+ #   history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
+    #train_recos_to_save = np.concatenate([torch.stack(train_recos[:-1]).flatten().detach().cpu().numpy(), train_recos[-1].flatten().detach().cpu().numpy()])
+    #train_recos_to_save = torch.stack(train_recos).flatten().detach().cpu().numpy()
+    # /nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_lstm.npy
+  #  np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_outputMultiFeat_15_06.npy', history_to_save) #/content/checkpoints er prove su drive
+    #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
+#else:
+ #   np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_outputMultiFeat_15_06.npy', history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_output1Feat_17_06.npy', history)

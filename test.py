@@ -83,7 +83,11 @@ print(train.columns)
 if args.do_multivariate:
     residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
     residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'resid']]
+    lags = [1, -1, 24, -24, 168, -168] #[1, -1]
+    residui_df = create_diff_lag_features(residui_df, lags)
     residui_df = add_trig_resid(residui_df)
+    residui_df = add_rolling_feature(residui_df, 12)
+    residui_df = add_rolling_feature(residui_df, 24)
     dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
     train = pd.concat(dfs_train.values())
     val = pd.concat(dfs_val.values())
@@ -124,6 +128,7 @@ else:
 print("X_train: ", X_train.shape)
 print("X_val: ", X_val.shape)
 print("X_test: ", X_test.shape)
+print("y_test: ", y_test.shape)
 BATCH_SIZE =  args.batch_size
 N_EPOCHS = args.epochs
 hidden_size = args.hidden_size
@@ -193,7 +198,8 @@ if args.do_reconstruction:
 
     reconstruction_test = np.concatenate([torch.stack(w[:-1]).flatten().detach().cpu().numpy(), w[-1].flatten().detach().cpu().numpy()])
     reconstruction_val = np.concatenate([torch.stack(w_v[:-1]).flatten().detach().cpu().numpy(), w_v[-1].flatten().detach().cpu().numpy()])
-    
+    print(len(reconstruction_test))
+    print(len(reconstruction_val))
     predicted_df_val = get_predicted_dataset(val, reconstruction_val)
     predicted_df_test = get_predicted_dataset(test, reconstruction_test)
 
@@ -201,9 +207,11 @@ if args.do_reconstruction:
     percentile = args.percentile
     weight_overall = args.weights_overall
 
+    print("Method: ", threshold_method)
+
     predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
-    predicted_df_test.index.names=['timestamp']
-    predicted_df_test= predicted_df_test.reset_index()
+    #predicted_df_test.index.names=['timestamp']
+    #predicted_df_test= predicted_df_test.reset_index()
     predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
 
     predicted_df_test = pd.merge(predicted_df_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
@@ -248,7 +256,7 @@ if args.do_reconstruction:
             best_building = bid
         else:
             p, re, ro, f = score
-            if  ro > highest_score[2] : #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
+            if  ro > highest_score[2] and f > highest_score[3]: #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
                 highest_score = score
                 best_building = bid
     print("Building {} has the highest scores {}".format(best_building, highest_score))
@@ -282,6 +290,28 @@ if args.do_reconstruction:
     print("Results for contextual anomalies: ")
     print(classification_report(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
     print(roc_auc_score(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
+
+    print("STATISTICHE PER Primary_use")
+    precisions_p = []
+    recalls_p = []
+    rocs_p = []
+    f1s_p = []
+    scores_p = {}
+    for primary_use, gdf in predicted_df_test.groupby("primary_use"):
+        prec = precision_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        rec = recall_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        roc = roc_auc_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        f1 = f1_score(gdf['anomaly'], gdf['predicted_anomaly'])
+        precisions_p.append(prec)
+        recalls_p.append(rec)
+        rocs_p.append(roc)
+        f1s_p.append(f1)
+        #print("Building: ", building_id)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
+        scores_p[primary_use] = [prec, rec, roc, f1]
+    print("Scores by primary_use")
+    print(scores_p)
+
 
 
 
@@ -337,8 +367,80 @@ elif args.do_test:
     y_pred_[y_pred >= threshold] = 1
     print(classification_report(y_test, y_pred_))
     print(roc_auc_score(y_test, y_pred_))
-
+    """
     print("STATISTICHE MEDIE - PER BUILDING")
+    predicted_df = get_predicted_anomaly_score(test, y_pred_, y_test)
 
+    precisions = []
+    recalls = []
+    rocs = []
+    f1s = []
+    scores = {}
+    for building_id, gdf in predicted_df.groupby("building_id"):
+        prec = precision_score(gdf['new_anomalies'], gdf['predictions'])
+        rec = recall_score(gdf['new_anomalies'], gdf['predictions'])
+        roc = roc_auc_score(gdf['new_anomalies'], gdf['predictions'])
+        f1 = f1_score(gdf['new_anomalies'], gdf['predictions'])
+        precisions.append(prec)
+        recalls.append(rec)
+        rocs.append(roc)
+        f1s.append(f1)
+        #print("Building: ", building_id)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
+        scores[building_id] = [prec, rec, roc, f1]
+    print("Average scores by building")
+    print(np.mean(precisions))
+    print(np.mean(recalls))
+    print(np.mean(rocs))
+    print(np.mean(f1s))
+
+    
+
+    print("Highest score and corresponding building and building type")
+    highest_score = []
+    best_building = None
+    for bid, score in scores.items():
+        #print("Building: ", bid)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
+        if len(highest_score) == 0:
+            highest_score = score
+            best_building = bid
+        else:
+            p, re, ro, f = score
+            if  ro > highest_score[2] : #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
+                highest_score = score
+                best_building = bid
+    print("Building {} has the highest scores {}".format(best_building, highest_score))
+    print("Building type: ", predicted_df[predicted_df.building_id == best_building].primary_use.unique())
+
+    print("Lowest score and corresponding building and building type")
+    lowest_score = []
+    worst_building = None
+    for bid, score in scores.items():
+        #print("Building: ", bid)
+        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
+        if len(lowest_score) == 0:
+            lowest_score = score
+            worst_building = bid
+        else:
+            p, re, ro, f = score
+            if  ro < lowest_score[2] : #p> lowest_score[0] and re > lowest_score[1] and and f > lowest_score[3]
+                lowest_score = score
+                worst_building = bid
+    print("Building {} has the lowest scores {}".format(worst_building, lowest_score))
+    print("Building type: ", predicted_df[predicted_df.building_id == worst_building].primary_use.unique())
+
+    print("EVALUATION: point anomalies VS Contextual")
+    predicted_df['anomaly_outlier'] = [1 if (el['new_anomalies']==1 and el['outliers']==1) else 0 for _ , el in predicted_df.iterrows()]
+    predicted_df['predicted_anomaly_outlier'] = [1 if (el['predictions']==1 and el['outliers']==1) else 0 for _ , el in predicted_df.iterrows()]
+    predicted_df['anomaly_not_outlier'] = predicted_df['new_anomalies']-predicted_df['anomaly_outlier']
+    predicted_df['predicted_anomaly_not_outlier'] = predicted_df['predictions']-predicted_df['predicted_anomaly_outlier']
+    print("Results for Outliers: ")
+    print(classification_report(predicted_df['anomaly_outlier'], predicted_df['predicted_anomaly_outlier']))
+    print(roc_auc_score(predicted_df['anomaly_outlier'], predicted_df['predicted_anomaly_outlier']))
+    print("Results for contextual anomalies: ")
+    print(classification_report(predicted_df['anomaly_not_outlier'], predicted_df['predicted_anomaly_not_outlier']))
+    print(roc_auc_score(predicted_df['anomaly_not_outlier'], predicted_df['predicted_anomaly_not_outlier']))
+    """
 
 

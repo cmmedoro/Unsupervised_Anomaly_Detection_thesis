@@ -228,7 +228,7 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
         if end_ix > len(building_data)-1:
             break
         # gather input and output parts of the pattern
-        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, 0]
+        seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix, :]
         # In seq_x we store the data for the window
         # In seq_y we store the meter_reading corresponding to the following data point in the sequence. This is the ground truth
         # we are going to use to compare the predictions made by the model

@@ -23,6 +23,7 @@ class Decoder(nn.Module):
     super().__init__()
     self.latent_size = latent_size
     self.window = train_window
+    out_size = 1
     self.lstm = nn.LSTM(input_size=latent_size, hidden_size=latent_size, num_layers=1, batch_first=True, dropout = 0.2
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
@@ -103,7 +104,8 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
         #result_train = evaluate(model, train_loader, criterion, device, epoch+1)
         model.epoch_end(epoch, result, result_train)
         #model.epoch_end(epoch, result)
-        history.append((result_train, result))
+        res = result_train.item()
+        history.append((res, result.item()))
     return history 
     
 def testing(model, test_loader, device):
@@ -118,8 +120,9 @@ def testing(model, test_loader, device):
             # This because the input and the reconstruction are 3-D tensors, so we need to turn them into 2-D
             batch_s = batch.reshape(-1, batch.size()[1] * batch.size()[2])
             w_s = w.reshape(-1, w.size()[1] * w.size()[2])
-            #print(batch_s.size())
-            #print(w_s.size())
+            #batch_s = batch[:, :, 0]
+            #batch_s = batch_s.reshape(batch.size()[0], batch.size()[1], 1)
+            #w_s = w
             #results.append(criterion(w, batch))
             results.append(torch.mean((batch_s-w_s)**2,axis=1))
             reconstruction.append(w)

@@ -92,9 +92,15 @@ def add_trigonometric_features(dataframe):
 def add_trig_resid(dataframe):
   dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'])
   dataframe['weekday']=dataframe['timestamp'].dt.weekday
+  dataframe['month'] = dataframe['timestamp'].dt.month
+  dataframe['hour'] = dataframe['timestamp'].dt.hour
   #dataframe['weekday'] = dataframe.index.weekday
   dataframe['weekday_y']=sin_transformer(7).fit_transform(dataframe['weekday'])
   dataframe['weekday_x']=cos_transformer(7).fit_transform(dataframe['weekday'])
+  dataframe['month_y']=sin_transformer(12).fit_transform(dataframe['month'])
+  dataframe['month_x']=cos_transformer(12).fit_transform(dataframe['month'])
+  dataframe['hour_y']=sin_transformer(24).fit_transform(dataframe['hour'])
+  dataframe['hour_x']=cos_transformer(24).fit_transform(dataframe['hour'])
   return dataframe
 
 def create_lag_features(data_frame, list_lags):
@@ -244,9 +250,12 @@ def create_multivariate_train_eval_sequences(dataframe, time_steps):
   output = []
   output2=[]
   for building_id, gdf in dataframe.groupby("building_id"):
+      gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']] = scaler.fit_transform(gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature','weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']])
+      building_data = np.array(gdf[['meter_reading', 'resid','sea_level_pressure', 'air_temperature', 'weekday_y', 'weekday_x','is_holiday', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168', 'lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']]).astype(float) #, 
+      
       #'building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature'
-      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y', 'resid']]).astype(float) 
+      #gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']])
+      #building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y', 'resid']]).astype(float) 
       for i in range(len(building_data) - time_steps + 1):
         # find the end of this sequence
         end_ix = i + time_steps
@@ -278,8 +287,10 @@ def create_multivariate_test_sequences(dataframe, time_steps):
     output = []
     output2 = []
     for building_id, gdf in dataframe.groupby("building_id"):
-      gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']])
-      building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y', 'resid']]).astype(float) 
+      gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']] = scaler.fit_transform(gdf[['meter_reading', 'resid', 'sea_level_pressure', 'air_temperature','weekday_x', 'weekday_y', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168','lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']])
+      building_data = np.array(gdf[['meter_reading', 'resid','sea_level_pressure', 'air_temperature', 'weekday_y', 'weekday_x','is_holiday', 'month_x', 'month_y', 'hour_x', 'hour_y', 'lag_-1', 'lag_24', 'lag_-24', 'lag_168', 'lag_-168', 'meter_reading_mean_lag12', 'meter_reading_std_lag12', 'meter_reading_mdn_lag12', 'meter_reading_mean_lag24', 'meter_reading_std_lag24', 'meter_reading_mdn_lag24']]).astype(float) #, 
+      #gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']] = scaler.fit_transform(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'weekday_x', 'weekday_y', 'resid']])
+      #building_data = np.array(gdf[['meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'weekday_x', 'weekday_y', 'resid']]).astype(float) 
       for i in range(0, len(building_data) - time_steps + 1, time_steps):
         end_ix = i + time_steps
         #if end_ix > len(gdf):
