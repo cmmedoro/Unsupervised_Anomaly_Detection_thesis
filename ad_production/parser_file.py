@@ -10,14 +10,11 @@ def parse_arguments():
     parser.add_argument("--hidden_size", type = float, default = 1/8, help = "Size of the hidden layer of the model")
     """
     Model type:
-    - usad ---> usad architecture, with encoder and decoders
     - linear_ae ---> simple linear autoencoder (usad with just one decoder)
     - conv_ae ---> convolutional autoencoder
     - lstm_ae ---> lstm autoencoder
-    - usad_conv ---> usad with convolution instead of linear layers
-    - usad_lstm ---> usad with lstm layers instead of linear layers
     """
-    parser.add_argument("--model_type", type = str, default = "usad", help = "Choose a model among usad, conv, lstm")
+    parser.add_argument("--model_type", type = str, default = "linear_ae", help = "Choose a model among usad, conv, lstm")
 
     parser.add_argument("--epochs", type = int, default = 100)
 

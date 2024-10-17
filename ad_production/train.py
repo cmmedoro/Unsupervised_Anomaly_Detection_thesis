@@ -52,8 +52,8 @@ X_test = scaler.transform(test)
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 #### CAMBIA LE FEATURES DA TENERE IN CASO MULTIVARIATO
 train_window = args.train_window
-X_t = create_sequences(dfs_train, train_window)
-X_te = create_sequences(dfs_test, train_window)
+X_t = create_sequences(X_train, train_window)
+X_te = create_sequences(X_test, train_window, train_window)
 
 
 BATCH_SIZE =  args.batch_size
@@ -75,7 +75,7 @@ elif model_type == "linear_ae" and args.do_multivariate:
 else:
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     
-if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
+if model_type == "lstm_ae" or model_type == "conv_ae":
     z_size = 32
 # Create the model and send it on the gpu device
 if model_type == "lstm_ae":
@@ -86,7 +86,7 @@ elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
 
 print(device)
-model = model.to(device) #to_device(model, device)
+model = model.to(device) 
 print(model)
 
 # Start training

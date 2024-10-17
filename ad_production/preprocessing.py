@@ -71,7 +71,7 @@ def split(dataframe):
   return df_train, df_test
 
 
-# Generated training sequences to use in the model.
+# Generated training sequences to use in the model. Valid also for testing, where stride = time_steps
 def create_sequences(dataframe, time_steps, stride = 1):
     sequences = []
     for i in range(0, len(dataframe) - time_steps + 1, stride):

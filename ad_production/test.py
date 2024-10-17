@@ -19,16 +19,7 @@ args = parser_file.parse_arguments()
 
 model_type = args.model_type
 
-if model_type == "usad":
-    from USAD.usad import *
-    from USAD.utils import *
-elif model_type == "usad_conv":
-    from USAD.usad_conv import *
-    from USAD.utils import *
-elif model_type == "usad_lstm":
-    from USAD.usad_lstm import *
-    from USAD.utils import *
-elif model_type == "linear_ae":
+if model_type == "linear_ae":
     from linear_ae import *
     from utils_ae import *
 elif model_type == "conv_ae":
@@ -36,9 +27,6 @@ elif model_type == "conv_ae":
     from utils_ae import *
 elif model_type == "lstm_ae":
     from lstm_ae import *
-    from utils_ae import *
-elif model_type == "vae":
-    from vae import *
     from utils_ae import *
 
 #device = get_default_device()
@@ -49,86 +37,28 @@ else:
     device = torch.device('cpu')
 
 #### Open the dataset ####
-energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-#energy_df = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/train_features.csv")
+# Original dataset
+production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/ad_production_dc.csv")
+production_df['datetime'] = pd.to_datetime(production_df.datetime)
 # Select some columns from the original dataset
-df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature']]
+production_df1 = production_df[['generation_kwh']]
 
 ### PREPROCESSING ###
-# 1) Impute missing values
-imputed_df = impute_nulls(df)
-
-# 2) Resample the dataset: measurement frequency = "1h"
-dfs_dict = impute_missing_dates(imputed_df)
-df1 = pd.concat(dfs_dict.values())
-# 3) Add trigonometric features
-df2 = add_trigonometric_features(df1) #
-
 # Split the dataset into train, validation and test
-dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
-train = pd.concat(dfs_train.values())
-val = pd.concat(dfs_val.values())
-test = pd.concat(dfs_test.values())
+dfs_train, dfs_test = split(production_df1)
+test = dfs_test.reset_index(drop = True)
 
-if args.do_resid:
-    # Residuals dataset (missing values and dates imputation already performed)
-    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
-    #residuals = pd.read_csv("/content/drive/MyDrive/ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu/residuals.csv")
-    residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'resid', 'is_na']]
-    dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
-    train = pd.concat(dfs_train.values())
-    val = pd.concat(dfs_val.values())
-    test = pd.concat(dfs_test.values())
-print(train.columns)
-if args.do_multivariate:
-    residuals = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/residuals2.csv")
-    residui_df = residuals[['timestamp', 'building_id', 'primary_use', 'anomaly', 'meter_reading', 'sea_level_pressure', 'air_temperature', 'is_holiday', 'resid', 'is_na']]
-    lags = [1, -1, 24, -24, 168, -168] #[1, -1]
-    residui_df = create_diff_lag_features(residui_df, lags)
-    residui_df = add_trig_resid(residui_df)
-    residui_df = add_rolling_feature(residui_df, 12)
-    residui_df = add_rolling_feature(residui_df, 24)
-    dfs_train, dfs_val, dfs_test = train_val_test_split(residui_df)
-    train = pd.concat(dfs_train.values())
-    val = pd.concat(dfs_val.values())
-    test = pd.concat(dfs_test.values())
-
+scaler = MinMaxScaler(feature_range = (0,1))
+X_train = scaler.fit_transform(dfs_train)
+X_test = scaler.transform(test)
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
+#### CAMBIA LE FEATURES DA TENERE IN CASO MULTIVARIATO
 train_window = args.train_window
-#X_train, y_train = create_train_eval_sequences(train, train_window)
+X_t = create_sequences(X_train, train_window, train_window)
+X_te = create_sequences(X_test, train_window, train_window)
 
-if args.do_multivariate:
-    X_train, y_train = create_multivariate_train_eval_sequences(train, train_window)
-    X_val, y_val = create_multivariate_train_eval_sequences(val, train_window)
-else:
-    #X_train, y_train = create_train_eval_sequences(train, train_window)
-    #X_val, y_val = create_train_eval_sequences(val, train_window)
-    X_train, y_train = create_sequences(train, train_window, 1)
-    X_val, y_val = create_sequences(val, train_window, 1)
 
-if args.do_test and not args.do_multivariate:
-    # Overlapping windows
-    print("UNIV")
-    X_test, y_test = create_train_eval_sequences(test, train_window)
-    X_val, y_val = create_train_eval_sequences(val, train_window)
-elif args.do_test and args.do_multivariate:
-    print("MULTI")
-    X_test, y_test = create_multivariate_train_eval_sequences(test, train_window)
-    X_val, y_val = create_multivariate_train_eval_sequences(val, train_window)
-elif args.do_reconstruction and args.do_multivariate:
-    X_test, y_test = create_multivariate_test_sequences(test, train_window)
-    X_val, y_val = create_multivariate_test_sequences(val, train_window)
-else:
-    # Non-overlapping windows
-    X_test, y_test = create_test_sequences(test, train_window)
-    X_val, y_val = create_test_sequences(val, train_window)
-    print(X_test.shape, y_test.shape)
-
-print("X_train: ", X_train.shape)
-print("X_val: ", X_val.shape)
-print("X_test: ", X_test.shape)
-print("y_test: ", y_test.shape)
 BATCH_SIZE =  args.batch_size
 N_EPOCHS = args.epochs
 hidden_size = args.hidden_size
@@ -138,36 +68,28 @@ batch, window_len, n_channels = X_train.shape
 
 w_size = X_train.shape[1] * X_train.shape[2]
 z_size = int(w_size * hidden_size) 
-w_size, z_size
 
-
-
-if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_conv" or model_type == "usad_lstm" or model_type == "vae":
-    #train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size, 1]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    #Credo di dover cambiare X_val.shape[0], w_size, X_val.shape[2] con X_val.shape[0], X_val.shape[1], X_val.shape[2]
-    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0], X_val.shape[1], X_val.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_test.shape[0],X_test.shape[1], X_test.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-elif model_type =="linear_ae" and args.do_multivariate:
-    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().reshape(([X_test.shape[0], w_size])), torch.from_numpy(y_test).float().reshape(([y_test.shape[0], window_len]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().reshape(([X_val.shape[0], w_size])), torch.from_numpy(y_val).float().reshape(([y_val.shape[0], window_len]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+if model_type == "conv_ae" or model_type == "lstm_ae" :
+    #Credo di dover cambiare X_train.shape[0], w_size, X_train.shape[2] con X_train.shape[0], X_train.shape[1], X_train.shape[2]
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().view(([X_t.shape[0], X_t.shape[1], X_t.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().view(([X_te.shape[0],X_te.shape[1], X_te.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+   
+elif model_type == "linear_ae" and args.do_multivariate:
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size])), torch.from_numpy(X_t).float().reshape(([X_t.shape[0], window_len]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float().reshape(([X_te.shape[0], w_size])), torch.from_numpy(X_te).float().reshape(([X_te.shape[0], window_len]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 else:
-    #train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().reshape(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_test).float().reshape(([X_test.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float().reshape(([X_te.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
+if model_type == "lstm_ae" or model_type == "conv_ae":
     z_size = 32
 # Create the model and send it on the gpu device
 if model_type == "lstm_ae":
     model = LstmAE(n_channels, z_size, train_window)
 elif model_type == "conv_ae":
-    model = ConvAE(n_channels, z_size)
+    model = ConvAE(n_channels, z_size) #n_channels
 elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
-elif model_type == "vae":
-    model = LstmVAE(n_channels, z_size, train_window)
-else:
-    model = UsadModel(w_size, z_size)
 model = model.to(device) #to_device(model, device)
 print(model)
 
@@ -177,34 +99,26 @@ if args.do_reconstruction:
     checkpoint_dir = args.checkpoint_dir
     checkpoint = torch.load(checkpoint_dir)
 
-    if model_type.startswith("usad"):
-        model.encoder.load_state_dict(checkpoint['encoder'])
-        model.decoder1.load_state_dict(checkpoint['decoder1'])
-        model.decoder2.load_state_dict(checkpoint['decoder2'])
-    else: 
-        model.encoder.load_state_dict(checkpoint['encoder'])
-        model.decoder.load_state_dict(checkpoint['decoder'])
+    model.encoder.load_state_dict(checkpoint['encoder'])
+    model.decoder.load_state_dict(checkpoint['decoder'])
 
-    if model_type == "vae":
-        results, w, mu, logvar = testing(model, test_loader, device)
-    else:
-        results, w = testing(model,test_loader, device)
+
+    results, w = testing(model,test_loader, device)
     print(len(w), w[0].size())
-    # Reconstruction of validation set
-    if model_type == "vae":
-        results_v, w_v, mu_v, logvar_v = testing(model, val_loader, device)
-    else:
-        results_v, w_v = testing(model,val_loader, device)
+    # Reconstruction of training set
+    results_v, w_v = testing(model,train_loader, device)
 
 
     res_dir = args.res_dir
 
-    reconstruction_test = np.concatenate([torch.stack(w[:-1]).flatten().detach().cpu().numpy(), w[-1].flatten().detach().cpu().numpy()])
-    reconstruction_val = np.concatenate([torch.stack(w_v[:-1]).flatten().detach().cpu().numpy(), w_v[-1].flatten().detach().cpu().numpy()])
+    reconstruction_test = w[0].flatten().detach().cpu().numpy()
+    reconstruction_train = w_v[0].flatten().detach().cpu().numpy()
     print(len(reconstruction_test))
-    print(len(reconstruction_val))
-    predicted_df_val = get_predicted_dataset(val, reconstruction_val)
-    predicted_df_test = get_predicted_dataset(test, reconstruction_test)
+    print(len(reconstruction_train))
+    dim_train = X_t.shape[0] * X_t.shape[1]
+    dim_test = X_te.shape[0] * X_te.shape[1]
+    predicted_df_train = get_predicted_dataset(pd.DataFrame(X_train[:dim_train], columns = ['generation_kwh']), reconstruction_train)
+    predicted_df_test = get_predicted_dataset(pd.DataFrame(X_test[:dim_test], columns=['generation_kwh']), reconstruction_test)
 
     threshold_method = args.threshold
     percentile = args.percentile
@@ -212,12 +126,12 @@ if args.do_reconstruction:
 
     print("Method: ", threshold_method)
 
-    predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
+    predicted_df_test = anomaly_detection(predicted_df_train, predicted_df_test, threshold_method, percentile, weight_overall)
     predicted_df_test.index.names=['timestamp']
     predicted_df_test= predicted_df_test.reset_index()
     predicted_df_test['timestamp']=predicted_df_test['timestamp'].astype(str)
 
-    predicted_df_test = pd.merge(predicted_df_test, df[['timestamp','building_id']], on=['timestamp','building_id'])
+    #predicted_df_test = pd.merge(predicted_df_test, production_df[['datetime','generation_kwh']], on=['generation_kwh'])
     #print(predicted_df_test.anomaly.sum())
     #print("Meter reading: ", predicted_df_test.meter_reading)
     #print("Predictions: ", predicted_df_test.reconstruction)
@@ -225,71 +139,9 @@ if args.do_reconstruction:
     print(classification_report(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
     print(roc_auc_score(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
     print(predicted_df_test.columns)
-    print("Risultati corretti con post-processing su valori mancanti")
-    predicted_df_test = postprocessing_on_missing_values(predicted_df_test, predicted_df_test)
-    print(classification_report(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
-    print(roc_auc_score(predicted_df_test['anomaly'], predicted_df_test['predicted_anomaly']))
-
-    print("STATISTICHE MEDIE - PER BUILDING")
-    precisions = []
-    recalls = []
-    rocs = []
-    f1s = []
-    scores = {}
-    for building_id, gdf in predicted_df_test.groupby("building_id"):
-        prec = precision_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        rec = recall_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        roc = roc_auc_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        f1 = f1_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        precisions.append(prec)
-        recalls.append(rec)
-        rocs.append(roc)
-        f1s.append(f1)
-        #print("Building: ", building_id)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
-        scores[building_id] = [prec, rec, roc, f1]
-    print("Average scores by building")
-    print(np.mean(precisions))
-    print(np.mean(recalls))
-    print(np.mean(rocs))
-    print(np.mean(f1s))
-
     
 
-    print("Highest score and corresponding building and building type")
-    highest_score = []
-    best_building = None
-    for bid, score in scores.items():
-        #print("Building: ", bid)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
-        if len(highest_score) == 0:
-            highest_score = score
-            best_building = bid
-        else:
-            p, re, ro, f = score
-            if  ro > highest_score[2] and f > highest_score[3]: #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
-                highest_score = score
-                best_building = bid
-    print("Building {} has the highest scores {}".format(best_building, highest_score))
-    print("Building type: ", predicted_df_test[predicted_df_test.building_id == best_building].primary_use.unique())
-
-    print("Lowest score and corresponding building and building type")
-    lowest_score = []
-    worst_building = None
-    for bid, score in scores.items():
-        #print("Building: ", bid)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
-        if len(lowest_score) == 0:
-            lowest_score = score
-            worst_building = bid
-        else:
-            p, re, ro, f = score
-            if  ro < lowest_score[2] : #p> lowest_score[0] and re > lowest_score[1] and and f > lowest_score[3]
-                lowest_score = score
-                worst_building = bid
-    print("Building {} has the lowest scores {}".format(worst_building, lowest_score))
-    print("Building type: ", predicted_df_test[predicted_df_test.building_id == worst_building].primary_use.unique())
-
+    """
     print("EVALUATION: point anomalies VS Contextual")
     predicted_df_test['anomaly_outlier'] = [1 if (el['anomaly']==1 and el['outliers']==1) else 0 for _ , el in predicted_df_test.iterrows()]
     predicted_df_test['predicted_anomaly_outlier'] = [1 if (el['predicted_anomaly']==1 and el['outliers']==1) else 0 for _ , el in predicted_df_test.iterrows()]
@@ -301,28 +153,7 @@ if args.do_reconstruction:
     print("Results for contextual anomalies: ")
     print(classification_report(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
     print(roc_auc_score(predicted_df_test['anomaly_not_outlier'], predicted_df_test['predicted_anomaly_not_outlier']))
-
-    print("STATISTICHE PER Primary_use")
-    precisions_p = []
-    recalls_p = []
-    rocs_p = []
-    f1s_p = []
-    scores_p = {}
-    for primary_use, gdf in predicted_df_test.groupby("primary_use"):
-        prec = precision_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        rec = recall_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        roc = roc_auc_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        f1 = f1_score(gdf['anomaly'], gdf['predicted_anomaly'])
-        precisions_p.append(prec)
-        recalls_p.append(rec)
-        rocs_p.append(roc)
-        f1s_p.append(f1)
-        #print("Building: ", building_id)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
-        scores_p[primary_use] = [prec, rec, roc, f1]
-    print("Scores by primary_use")
-    print(scores_p)
-
+    """
 
 
 
@@ -332,25 +163,15 @@ elif args.do_test:
     checkpoint_dir = args.checkpoint_dir
     checkpoint = torch.load(checkpoint_dir)
 
-    if model_type.startswith("usad"):
-        model.encoder.load_state_dict(checkpoint['encoder'])
-        model.decoder1.load_state_dict(checkpoint['decoder1'])
-        model.decoder2.load_state_dict(checkpoint['decoder2'])
-    else: 
-        model.encoder.load_state_dict(checkpoint['encoder'])
-        model.decoder.load_state_dict(checkpoint['decoder'])
+    model.encoder.load_state_dict(checkpoint['encoder'])
+    model.decoder.load_state_dict(checkpoint['decoder'])
 
     #results, w = testing(model,test_loader)
     #if not model_type.startswith("usad"):
      #   results, w = testing(model, test_loader)
     #else:
      #   results = testing(model, test_loader)
-    if model_type == "vae":
-        results, w, mu, logvar = testing(model, test_loader, device)
-    elif model_type == "usad":
-        results = testing(model, test_loader, device)
-    else:
-        results, w = testing(model,test_loader, device)
+    results, w = testing(model,test_loader, device)
 
 
     # Qui va ad ottenere le label per ogni finestra
@@ -409,64 +230,7 @@ elif args.do_test:
     predicted_df['windowed_labels'] = y_test
     predicted_df['outliers_labels'] = y_outlier
 
-    print("STATISTICHE MEDIE - PER BUILDING")
-    precisions = []
-    recalls = []
-    rocs = []
-    f1s = []
-    scores = {}
-    for building_id, gdf in predicted_df.groupby("building_id"):
-        prec = precision_score(gdf['windowed_labels'], gdf['predictions'])
-        rec = recall_score(gdf['windowed_labels'], gdf['predictions'])
-        roc = roc_auc_score(gdf['windowed_labels'], gdf['predictions'])
-        f1 = f1_score(gdf['windowed_labels'], gdf['predictions'])
-        precisions.append(prec)
-        recalls.append(rec)
-        rocs.append(roc)
-        f1s.append(f1)
-        #print("Building: ", building_id)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
-        scores[building_id] = [prec, rec, roc, f1]
-    print("Average scores by building")
-    print(np.mean(precisions))
-    print(np.mean(recalls))
-    print(np.mean(rocs))
-    print(np.mean(f1s))
-
-    print("Highest score and corresponding building and building type")
-    highest_score = []
-    best_building = None
-    for bid, score in scores.items():
-        #print("Building: ", bid)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
-        if len(highest_score) == 0:
-            highest_score = score
-            best_building = bid
-        else:
-            p, re, ro, f = score
-            if  ro > highest_score[2] and f > highest_score[3]: #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
-                highest_score = score
-                best_building = bid
-    print("Building {} has the highest scores {}".format(best_building, highest_score))
-    print("Building type: ", predicted_df[predicted_df.building_id == best_building].primary_use.unique())
-
-    print("Lowest score and corresponding building and building type")
-    lowest_score = []
-    worst_building = None
-    for bid, score in scores.items():
-        #print("Building: ", bid)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
-        if len(lowest_score) == 0:
-            lowest_score = score
-            worst_building = bid
-        else:
-            p, re, ro, f = score
-            if  ro < lowest_score[2]: #p> lowest_score[0] and re > lowest_score[1] and and f > lowest_score[3]
-                lowest_score = score
-                worst_building = bid
-    print("Building {} has the lowest scores {}".format(worst_building, lowest_score))
-    print("Building type: ", predicted_df[predicted_df.building_id == worst_building].primary_use.unique())
-
+    
     print("EVALUATION: point anomalies VS Contextual")
     predicted_df['anomaly_outlier'] = [1 if (el['windowed_labels']==1 and el['outliers_labels']==1) else 0 for _ , el in predicted_df.iterrows()]
     predicted_df['predicted_anomaly_outlier'] = [1 if (el['predictions']==1 and el['outliers_labels']==1) else 0 for _ , el in predicted_df.iterrows()]
@@ -478,80 +242,5 @@ elif args.do_test:
     print("Results for contextual anomalies: ")
     print(classification_report(predicted_df['anomaly_not_outlier'], predicted_df['predicted_anomaly_not_outlier']))
     print(roc_auc_score(predicted_df['anomaly_not_outlier'], predicted_df['predicted_anomaly_not_outlier']))
-    """
-    print("STATISTICHE MEDIE - PER BUILDING")
-    predicted_df = get_predicted_anomaly_score(test, y_pred_, y_test)
-
-    precisions = []
-    recalls = []
-    rocs = []
-    f1s = []
-    scores = {}
-    for building_id, gdf in predicted_df.groupby("building_id"):
-        prec = precision_score(gdf['new_anomalies'], gdf['predictions'])
-        rec = recall_score(gdf['new_anomalies'], gdf['predictions'])
-        roc = roc_auc_score(gdf['new_anomalies'], gdf['predictions'])
-        f1 = f1_score(gdf['new_anomalies'], gdf['predictions'])
-        precisions.append(prec)
-        recalls.append(rec)
-        rocs.append(roc)
-        f1s.append(f1)
-        #print("Building: ", building_id)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(prec, rec, f1, roc))
-        scores[building_id] = [prec, rec, roc, f1]
-    print("Average scores by building")
-    print(np.mean(precisions))
-    print(np.mean(recalls))
-    print(np.mean(rocs))
-    print(np.mean(f1s))
-
-    
-
-    print("Highest score and corresponding building and building type")
-    highest_score = []
-    best_building = None
-    for bid, score in scores.items():
-        #print("Building: ", bid)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
-        if len(highest_score) == 0:
-            highest_score = score
-            best_building = bid
-        else:
-            p, re, ro, f = score
-            if  ro > highest_score[2] : #p> highest_score[0] and re > highest_score[1] and and f > highest_score[3]
-                highest_score = score
-                best_building = bid
-    print("Building {} has the highest scores {}".format(best_building, highest_score))
-    print("Building type: ", predicted_df[predicted_df.building_id == best_building].primary_use.unique())
-
-    print("Lowest score and corresponding building and building type")
-    lowest_score = []
-    worst_building = None
-    for bid, score in scores.items():
-        #print("Building: ", bid)
-        #print("Precision: {:.4f}; Recall: {:.4f}; F1: {:.4f}; ROC: {:.4f}".format(score[0], score[1], score[3], score[2]))
-        if len(lowest_score) == 0:
-            lowest_score = score
-            worst_building = bid
-        else:
-            p, re, ro, f = score
-            if  ro < lowest_score[2] : #p> lowest_score[0] and re > lowest_score[1] and and f > lowest_score[3]
-                lowest_score = score
-                worst_building = bid
-    print("Building {} has the lowest scores {}".format(worst_building, lowest_score))
-    print("Building type: ", predicted_df[predicted_df.building_id == worst_building].primary_use.unique())
-
-    print("EVALUATION: point anomalies VS Contextual")
-    predicted_df['anomaly_outlier'] = [1 if (el['new_anomalies']==1 and el['outliers']==1) else 0 for _ , el in predicted_df.iterrows()]
-    predicted_df['predicted_anomaly_outlier'] = [1 if (el['predictions']==1 and el['outliers']==1) else 0 for _ , el in predicted_df.iterrows()]
-    predicted_df['anomaly_not_outlier'] = predicted_df['new_anomalies']-predicted_df['anomaly_outlier']
-    predicted_df['predicted_anomaly_not_outlier'] = predicted_df['predictions']-predicted_df['predicted_anomaly_outlier']
-    print("Results for Outliers: ")
-    print(classification_report(predicted_df['anomaly_outlier'], predicted_df['predicted_anomaly_outlier']))
-    print(roc_auc_score(predicted_df['anomaly_outlier'], predicted_df['predicted_anomaly_outlier']))
-    print("Results for contextual anomalies: ")
-    print(classification_report(predicted_df['anomaly_not_outlier'], predicted_df['predicted_anomaly_not_outlier']))
-    print(roc_auc_score(predicted_df['anomaly_not_outlier'], predicted_df['predicted_anomaly_not_outlier']))
-    """
 
 
