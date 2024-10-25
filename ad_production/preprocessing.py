@@ -8,6 +8,19 @@ from sklearn.model_selection import train_test_split
 import torch.nn.functional as F
 import torch
 
+### IMPUTING MISSING DATES ###
+def impute_missing_dates(dataframe):
+  """
+  Take first and last timestamp available. Create a new index starting from these two values, making sure that the index is 
+  sampled with 1 hour jump. Use ffill to impute the missing values for the dates newly created.
+  """
+  dataframe = dataframe.set_index(['datetime'])
+  start_ts = min(dataframe.index)
+  end_ts = max(dataframe.index)
+  new_index = pd.date_range(start_ts, end=end_ts, freq="1H")
+  new_df = dataframe.reindex(new_index, method = "ffill")
+  return new_df
+
 ### ADDING NEW FEATURES ###
 
 # New time features: they are used to encode in a continuous way the time
@@ -67,8 +80,9 @@ def add_rolling_feature(production_df, window=3):
 ### SPLIT THE DATASET IN TRAIN, VAL, TEST ###
 
 def split(dataframe):
-  df_train, df_test = train_test_split(dataframe, test_size = 0.2, shuffle = False)
-  return df_train, df_test
+  df_train1, df_test = train_test_split(dataframe, test_size = 0.2, shuffle = False)
+  df_train, df_val = train_test_split(df_train1, test_Size = 0.2, shuffle = False)
+  return df_train, df_val, df_test
 
 
 # Generated training sequences to use in the model. Valid also for testing, where stride = time_steps
@@ -81,6 +95,34 @@ def create_sequences(dataframe, time_steps, stride = 1):
             slice = dataframe.loc[i: (i + time_steps -1), :]
         sequences.append(slice)
     return np.stack(sequences)
+
+# Prepare the dataset for the synthetic generation of anomalies
+def synthetize_anomalies(df, ub_anomalies, indices_to_zero):
+    df['synthetic_anomaly'] = np.zeros(len(df))
+    df.loc[indices_to_zero, 'generation_kwh'] = 0
+    df.loc[indices_to_zero, 'synthetic_anomaly'] = 1
+    ub_an = ub_anomalies - len(indices_to_zero)
+    test_copy = df.copy()
+    test_copy.reset_index(inplace = True, drop = True)
+    df = gaussian_noise_injection(test_copy, ub_an)
+    return df
+
+def gaussian_noise_injection(df, ub_anomalies):
+    t_min = df.generation_kwh.min()
+    t_max = df.generation_kwh.max()
+    idx_list = np.random.choice(a=len(df), size=int(ub_anomalies), replace=False)
+    count_an = 0
+    for idx in idx_list:
+        print(idx)
+        if df.loc[idx, 'synthetic_anomaly'] == 0:
+            q = df.loc[idx, 'generation_kwh'] + np.random.uniform(
+                low=t_min,
+                high=1.0 * (t_max - t_min),
+            )
+            df.loc[idx, 'generation_kwh'] = q
+            df.loc[idx, 'synthetic_anomaly'] = 1
+            count_an = count_an + 1
+    return df
 
 
 

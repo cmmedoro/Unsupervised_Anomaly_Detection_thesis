@@ -37,22 +37,26 @@ else:
 # Original dataset
 production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/ad_production_dc.csv")
 production_df['datetime'] = pd.to_datetime(production_df.datetime)
+# Resampling of dates
+production_df = impute_missing_dates(production_df)
 # Select some columns from the original dataset
 production_df1 = production_df[['generation_kwh']]
 
 ### PREPROCESSING ###
 # Split the dataset into train, validation and test
-dfs_train, dfs_test = split(production_df1)
+dfs_train, dfs_val, dfs_test = split(production_df1)
 test = dfs_test.reset_index(drop = True)
 
 scaler = MinMaxScaler(feature_range = (0,1))
 X_train = scaler.fit_transform(dfs_train)
+X_val = scaler.transform(dfs_val)
 X_test = scaler.transform(test)
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 #### CAMBIA LE FEATURES DA TENERE IN CASO MULTIVARIATO
 train_window = args.train_window
 X_t = create_sequences(X_train, train_window)
+X_v = create_sequences(X_val, train_window)
 X_te = create_sequences(X_test, train_window, train_window)
 
 
@@ -68,15 +72,18 @@ z_size = int(w_size * hidden_size)
 
 if model_type == "conv_ae" or model_type == "lstm_ae" :
     #Credo di dover cambiare X_train.shape[0], w_size, X_train.shape[2] con X_train.shape[0], X_train.shape[1], X_train.shape[2]
-    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().view(([X_t.shape[0], X_t.shape[1], X_t.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
    
 elif model_type == "linear_ae" and args.do_multivariate:
-    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size])), torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float().view(([X_v.shape[0], w_size])), torch.from_numpy(X_v).float().view(([X_v.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 else:
-    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size])), torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float().view(([X_v.shape[0], w_size])), torch.from_numpy(X_v).float().view(([X_v.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     
-if model_type == "lstm_ae" or model_type == "conv_ae":
-    z_size = 32
+#if model_type == "lstm_ae" or model_type == "conv_ae":
+ #   z_size = 32
 # Create the model and send it on the gpu device
 if model_type == "lstm_ae":
     model = LstmAE(n_channels, z_size, train_window)
@@ -90,7 +97,7 @@ model = model.to(device)
 print(model)
 
 # Start training
-history = training(N_EPOCHS, model, train_loader, train_loader, device)
+history = training(N_EPOCHS, model, train_loader, val_loader, device)
 print(history)
   
 #plot_history(history)
