@@ -21,6 +21,42 @@ def impute_missing_dates(dataframe):
   new_df = dataframe.reindex(new_index, method = "ffill")
   return new_df
 
+def impute_missing_prod(dataframe):
+  """ 
+  For each country present in the dataframe we need to impute the missing values.
+  Imputation by replicating the pattern of the previous 24 hours, given the periodicity of the series.
+  Note: if more than 24 values are missing, the pattern cannot be replicated, so we need to perform iterations to fill 24 values at a time.
+  """
+  iterations_n_by_country = {}
+  for code, gdf in dataframe.groupby(['country_code']):
+      # Save the country code
+      country_code = code
+      if gdf.solar_generation_actual.isna().sum() > 0 :
+          # Define a boolean mask to identify the NaNs
+          is_na = gdf['solar_generation_actual'].isna()
+          # Find groups of consecutive NaNs, by assigning a uid to each group (every time is_na changes from False to True or viceversa)
+          gdf['na_group'] = (is_na != is_na.shift()).cumsum() * is_na
+          # Compute the length of each group to find the longest
+          na_lengths = gdf.groupby('na_group').size()
+          longest_na_group = na_lengths[na_lengths.index != 0].idxmax()  # Exclude group 0, which is not NaN
+          # Get the length of the longest NaN sequence and the positions
+          longest_na_length = na_lengths[longest_na_group]
+          #start_index = gdf[gdf['na_group'] == longest_na_group].index[0]
+          #end_index = gdf[gdf['na_group'] == longest_na_group].index[-1]
+          #print(f"The longest NaN sequence has length of {longest_na_length}, from index {start_index} to index {end_index}.")
+          # Remove temporary column
+          gdf.drop(columns=['na_group'], inplace=True)
+          iterations = int(np.ceil(longest_na_length / 24))
+          iterations_n_by_country[country_code] = iterations
+
+  for k, v in iterations_n_by_country.items():
+    gdf = dataframe[dataframe.country_code == k]
+    for i in range(v):
+        dataframe.solar_generation_actual = dataframe.solar_generation_actual.fillna(dataframe.solar_generation_actual.shift(24))
+  return dataframe
+
+  
+
 ### ADDING NEW FEATURES ###
 
 # New time features: they are used to encode in a continuous way the time
@@ -84,6 +120,12 @@ def split(dataframe):
   df_train, df_val = train_test_split(df_train1, test_size = 0.2, shuffle = False)
   return df_train, df_val, df_test
 
+def split_big(dataframe):
+  df_train = dataframe.iloc[:int(0.6 * len(dataframe)), :]
+  df_val = dataframe.iloc[int(0.6 * len(dataframe)):int(0.8 * len(dataframe)), :]
+  df_test = dataframe.iloc[int(0.8 * len(dataframe)):, :]
+  return df_train, df_val, df_test
+
 
 # Generated training sequences to use in the model. Valid also for testing, where stride = time_steps
 def create_sequences(dataframe, time_steps, stride = 1):
@@ -94,6 +136,23 @@ def create_sequences(dataframe, time_steps, stride = 1):
         if end_idx <= len(dataframe)+1:
             slice = dataframe.loc[i: (i + time_steps -1), :]
         sequences.append(slice)
+    return np.stack(sequences)
+
+def create_sequences_big(dataframe, time_steps, stride = 1):
+    scaler = MinMaxScaler(feature_range = (0,1))
+    sequences = []
+    for code, gdf in dataframe.groupby('country_code'):
+      production = gdf[['solar_generation_actual']]
+      X = scaler.fit_transform(production)
+      for i in range(0, len(production) - time_steps + 1, stride):
+          #end of sequence
+          end_idx = i + time_steps
+          if end_idx > len(production) - 1:
+            break
+          #if end_idx <= len(dataframe)+1:
+           #   slice = X[i: (i + time_steps -1), :]
+          slice = X[i: (i + time_steps), :]
+          sequences.append(slice)
     return np.stack(sequences)
 
 # Prepare the dataset for the synthetic generation of anomalies
