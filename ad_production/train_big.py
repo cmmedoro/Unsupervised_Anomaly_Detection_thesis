@@ -1,4 +1,4 @@
-from ad_production.preprocessing import impute_missing_prod, split, create_sequences, split_big, create_sequences_big
+from preprocessing import impute_missing_prod, split, create_sequences, split_big, create_sequences_big
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -7,13 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
-from ad_production.postprocessing import *
+from postprocessing import *
 import torch.utils.data as data_utils
-import ad_production.parser_file
+import parser_file
 import warnings
 warnings.filterwarnings('ignore')
 
-args = ad_production.parser_file.parse_arguments()
+args = parser_file.parse_arguments()
 
 model_type = args.model_type
 
