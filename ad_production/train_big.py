@@ -50,11 +50,11 @@ final_prod_df = impute_missing_prod(only_prod_df)
 
 
 # Select some columns from the original dataset
-final_prod_df1 = final_prod_df[['generation_kwh']]
+#final_prod_df1 = final_prod_df[['generation_kwh']]
 
 ### PREPROCESSING ###
 # Split the dataset into train, validation and test
-dfs_train, dfs_val, dfs_test = split_big(final_prod_df1)
+dfs_train, dfs_val, dfs_test = split_big(final_prod_df)
 train = dfs_train.reset_index(drop = True)
 val = dfs_val.reset_index(drop = True)
 test = dfs_test.reset_index(drop = True)
