@@ -42,11 +42,11 @@ production_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
 no_countries = ['DELU', 'HR', 'HU', 'PL']
 only_prod_df = production_df[production_df.country_code.isin(no_countries) == False]
 
-only_prod_df['datetime'] = pd.to_datetime(only_prod_df.datetime)
+only_prod_df['utc_timestamp'] = pd.to_datetime(only_prod_df.utc_timestamp)
 # Proceed with imputing the missing values
 # NOTE: given that the time series have a periodic nature (production at zero during the night, then it increases and finally decreases), it makes sense to try to impute the values
 # by considering replicating the previous 24 hours
-final_prod_df = impute_missing_prod()
+final_prod_df = impute_missing_prod(only_prod_df)
 
 
 # Select some columns from the original dataset
