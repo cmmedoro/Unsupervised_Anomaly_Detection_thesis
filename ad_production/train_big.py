@@ -18,14 +18,14 @@ args = parser_file.parse_arguments()
 model_type = args.model_type
 
 if model_type == "linear_ae":
-    from ad_production.linear_ae import *
-    from ad_production.utils_ae import *
+    from linear_ae import *
+    from utils_ae import *
 elif model_type == "conv_ae":
-    from ad_production.convolutional_ae import *
-    from ad_production.utils_ae import *
+    from convolutional_ae import *
+    from utils_ae import *
 elif model_type == "lstm_ae":
-    from ad_production.lstm_ae import *
-    from ad_production.utils_ae import *
+    from lstm_ae import *
+    from utils_ae import *
 
 
 if torch.cuda.is_available():
