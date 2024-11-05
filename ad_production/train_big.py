@@ -128,4 +128,4 @@ torch.save({
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 #else:
  #   np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_outputMultiFeat_15_06.npy', history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_multi_output!Feat_01_07.npy', history)
+np.save('/content/checkpoints/train_lstm_ae_big_40.npy', history)
