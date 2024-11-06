@@ -6,7 +6,8 @@ import torch.utils.data as data_utils
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
-from postprocessing import *
+from sklearn.preprocessing import MinMaxScaler
+from postprocessing import get_predicted_dataset_big, anomaly_detection
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file as pars
@@ -93,8 +94,8 @@ else:
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float().reshape(([X_v.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float().reshape(([X_te.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-#if model_type == "lstm_ae" or model_type == "conv_ae":
- #   z_size = 32
+if model_type == "lstm_ae" or model_type == "conv_ae":
+    z_size = 32
 # Create the model and send it on the gpu device
 if model_type == "lstm_ae":
     model = LstmAE(n_channels, z_size, train_window)
@@ -123,14 +124,14 @@ if args.do_reconstruction:
 
     res_dir = args.res_dir
 
-    reconstruction_test = w[0].flatten().detach().cpu().numpy()
-    reconstruction_val = w_v[0].flatten().detach().cpu().numpy()
+    reconstruction_test = np.concatenate([torch.stack(w[:-1]).flatten().detach().cpu().numpy(), w[-1].flatten().detach().cpu().numpy()])
+    reconstruction_val = np.concatenate([torch.stack(w_v[:-1]).flatten().detach().cpu().numpy(), w_v[-1].flatten().detach().cpu().numpy()])
     print(len(reconstruction_test))
     print(len(reconstruction_val))
     dim_val = X_v.shape[0] * X_v.shape[1]
     dim_test = X_te.shape[0] * X_te.shape[1]
-    predicted_df_val = get_predicted_dataset(pd.DataFrame(X_v[:dim_val], columns = ['generation_kwh']), reconstruction_val)
-    predicted_df_test = get_predicted_dataset(pd.DataFrame(X_te[:dim_test], columns=['generation_kwh']), reconstruction_test)
+    predicted_df_val = get_predicted_dataset_big(val[:dim_val], reconstruction_val)
+    predicted_df_test = get_predicted_dataset_big(test[:dim_test], reconstruction_test)
 
     threshold_method = args.threshold
     percentile = args.percentile
@@ -162,7 +163,7 @@ if args.do_reconstruction:
     res_s, w_s = testing(model, synth_loader, device)
     r_s = w_s[0].flatten().detach().cpu().numpy()
     dim_s = synth_seq.shape[0] * synth_seq.shape[1]
-    df_s = get_predicted_dataset(pd.DataFrame(X_synth[:dim_s], columns = ['generation_kwh']), r_s)
+    df_s = get_predicted_dataset_big(pd.DataFrame(X_synth[:dim_s], columns = ['generation_kwh']), r_s)
 
     preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall)
 
