@@ -14,6 +14,19 @@ def get_predicted_dataset(test, reconstruction):
   test['rel_loss'] = np.abs((test['reconstruction']-test['generation_kwh'])/test['reconstruction'])
   return test
 
+def get_predicted_dataset_big(test, reconstruction):
+    scaler = MinMaxScaler(feature_range = (0,1))
+    dict_test = []
+    for code, gdf in test.groupby('country_code'):
+      production = gdf[['solar_generation_actual']]
+      X = scaler.fit_transform(production)
+      dict_test[code] = X
+    predicted_df_test = pd.concat(dict_test.values())
+    predicted_df_test['reconstruction'] = reconstruction
+    predicted_df_test['abs_loss'] = np.abs(predicted_df_test.solar_generation_actual - predicted_df_test.reconstruction)
+    predicted_df_test['rel_loss'] = np.abs((predicted_df_test['reconstruction']-predicted_df_test['generation_kwh'])/predicted_df_test['reconstruction'])
+    return predicted_df_test
+
 def threshold_abs_loss(val, percentile, predicted_df):
   val_mae_loss = val['abs_loss'].values
   threshold = (np.percentile(val_mae_loss, percentile)) 

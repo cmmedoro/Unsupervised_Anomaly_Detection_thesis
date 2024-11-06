@@ -1,4 +1,4 @@
-from ad_production.preprocessing import *
+from preprocessing import impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -6,10 +6,10 @@ import torch.utils.data as data_utils
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
-from ad_production.postprocessing import *
+from postprocessing import *
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
-import ad_production.parser_file as pars
+import parser_file as pars
 from utils_ae import ROC
 import warnings
 warnings.filterwarnings('ignore')
@@ -19,14 +19,14 @@ args = pars.parse_arguments()
 model_type = args.model_type
 
 if model_type == "linear_ae":
-    from ad_production.linear_ae import *
-    from ad_production.utils_ae import *
+    from linear_ae import *
+    from utils_ae import *
 elif model_type == "conv_ae":
-    from ad_production.convolutional_ae import *
-    from ad_production.utils_ae import *
+    from convolutional_ae import *
+    from utils_ae import *
 elif model_type == "lstm_ae":
-    from ad_production.lstm_ae import *
-    from ad_production.utils_ae import *
+    from lstm_ae import *
+    from utils_ae import *
 
 #device = get_default_device()
 
@@ -43,19 +43,17 @@ production_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
 no_countries = ['DELU', 'HR', 'HU', 'PL']
 only_prod_df = production_df[production_df.country_code.isin(no_countries) == False]
 
-only_prod_df['datetime'] = pd.to_datetime(only_prod_df.datetime)
+only_prod_df['utc_timestamp'] = pd.to_datetime(only_prod_df.utc_timestamp)
 # Proceed with imputing the missing values
 # NOTE: given that the time series have a periodic nature (production at zero during the night, then it increases and finally decreases), it makes sense to try to impute the values
 # by considering replicating the previous 24 hours
-final_prod_df = impute_missing_prod()
+final_prod_df = impute_missing_prod(only_prod_df)
 
 
-# Select some columns from the original dataset
-final_prod_df1 = final_prod_df[['generation_kwh']]
 
 ### PREPROCESSING ###
 # Split the dataset into train, validation and test
-dfs_train, dfs_val, dfs_test = split_big(final_prod_df1)
+dfs_train, dfs_val, dfs_test = split_big(final_prod_df)
 train = dfs_train.reset_index(drop = True)
 val = dfs_val.reset_index(drop = True)
 test = dfs_test.reset_index(drop = True)
