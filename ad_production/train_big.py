@@ -126,7 +126,7 @@ if model_type != "transformer":
             'decoder': model.decoder.state_dict()
             }, checkpoint_path) # the path should be set in the run.job file
 else:
-    torch.save(model, checkpoint_path)
+    torch.save(model.state_dict(), checkpoint_path)
 #if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
  #   history_to_save = torch.stack(history).flatten().detach().cpu().numpy()
     #train_recos_to_save = np.concatenate([torch.stack(train_recos[:-1]).flatten().detach().cpu().numpy(), train_recos[-1].flatten().detach().cpu().numpy()])
