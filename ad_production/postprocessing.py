@@ -14,6 +14,15 @@ def get_predicted_dataset(test, reconstruction):
   test['rel_loss'] = np.abs((test['reconstruction']-test['generation_kwh'])/test['reconstruction'])
   return test
 
+def get_transformer_dataset(y_test, forecast, df_test, train_window):
+  # This will be used both for the test set and for the validation set, which is going to be used as reference for thresholds in some cases
+  predicted_test = pd.DataFrame(y_test, columns = ['solar_generation_actual'])
+  predicted_test['reconstruction'] = forecast
+  predicted_test['utc_timestamp'] = df_test[:-train_window].index
+  predicted_test['abs_loss'] = np.abs(predicted_test['solar_generation_actual'] - predicted_test['reconstruction'])
+  predicted_test['rel_loss'] = np.abs((predicted_test['reconstruction']-predicted_test['solar_generation_actual'])/predicted_test['reconstruction'])
+  return predicted_test
+
 def get_predicted_dataset_big(test, reconstruction):
     scaler = MinMaxScaler(feature_range = (0,1))
     dict_test = {}

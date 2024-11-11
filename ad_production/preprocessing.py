@@ -155,6 +155,23 @@ def create_sequences_big(dataframe, time_steps, stride = 1):
           sequences.append(slice)
     return np.stack(sequences)
 
+def create_transformer_sequences_big(dataframe, time_steps, stride = 1):
+    scaler = MinMaxScaler(feature_range = (0,1))
+    sequences = []
+    y_true = []
+    for code, gdf in dataframe.groupby('country_code'):
+      production = gdf[['solar_generation_actual']]
+      X = scaler.fit_transform(production)
+      for i in range(0, len(production) - time_steps, stride):
+          #end of sequence
+          end_idx = i + time_steps
+          
+          slice = X[i: (i + time_steps), :]
+          y = X[end_idx, 0]
+          sequences.append(slice)
+          y_true.append(y)
+    return np.stack(sequences), np.stack(y_true)
+
 # Prepare the dataset for the synthetic generation of anomalies
 def synthetize_anomalies(df, ub_anomalies, indices_to_zero):
   df['synthetic_anomaly'] = np.zeros(len(df))

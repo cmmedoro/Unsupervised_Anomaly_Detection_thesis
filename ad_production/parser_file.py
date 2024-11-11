@@ -32,6 +32,8 @@ def parse_arguments():
     parser.add_argument("--percentile", type = float, default = 0.95, help = "Choose a percentile for anomaly detection")
     parser.add_argument("--weights_overall", type = float, default = 0.5, help = "Choose a weight for anomaly detection")
 
+    parser.add_argument("--synthetic_generation", action = "store_true", help = "Whether to perform synthetic generation of anomalies or not")
+
     parser.add_argument("--do_multivariate", action = "store_true", help = "Whether to perform multivariate trials or not")
 
     args = parser.parse_args()

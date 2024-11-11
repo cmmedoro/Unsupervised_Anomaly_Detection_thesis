@@ -1,4 +1,4 @@
-from preprocessing import impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies
+from preprocessing import create_transformer_sequences_big, impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import MinMaxScaler
-from postprocessing import get_predicted_dataset_big, anomaly_detection
+from postprocessing import get_predicted_dataset_big, anomaly_detection, get_transformer_dataset
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file as pars
@@ -21,13 +21,13 @@ model_type = args.model_type
 
 if model_type == "linear_ae":
     from linear_ae import *
-    from utils_ae import *
 elif model_type == "conv_ae":
     from convolutional_ae import *
-    from utils_ae import *
 elif model_type == "lstm_ae":
     from lstm_ae import *
-    from utils_ae import *
+elif model_type == "transformer":
+    from transformer import *
+from utils_ae import *
 
 #device = get_default_device()
 
@@ -59,17 +59,17 @@ train = dfs_train.reset_index(drop = True)
 val = dfs_val.reset_index(drop = True)
 test = dfs_test.reset_index(drop = True)
 
-#scaler = MinMaxScaler(feature_range = (0,1))
-#X_train = scaler.fit_transform(dfs_train)
-#X_val = scaler.transform(dfs_val)
-#X_test = scaler.transform(test)
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
-#### CAMBIA LE FEATURES DA TENERE IN CASO MULTIVARIATO
 train_window = args.train_window
-X_t = create_sequences_big(dfs_train, train_window)
-X_v = create_sequences_big(dfs_val, train_window, train_window)
-X_te = create_sequences_big(dfs_test, train_window, train_window)
+if model_type == "transformer":
+    X_t, y_t = create_transformer_sequences_big(dfs_train, train_window)
+    X_v, y_v = create_transformer_sequences_big(dfs_val, train_window)
+    X_te, y_te = create_transformer_sequences_big(dfs_test, train_window)
+else:
+    X_t = create_sequences_big(dfs_train, train_window)
+    X_v = create_sequences_big(dfs_val, train_window, train_window)
+    X_te = create_sequences_big(dfs_test, train_window, train_window)
 
 
 BATCH_SIZE =  args.batch_size
@@ -86,7 +86,10 @@ if model_type == "conv_ae" or model_type == "lstm_ae" :
     #Credo di dover cambiare X_train.shape[0], w_size, X_train.shape[2] con X_train.shape[0], X_train.shape[1], X_train.shape[2]
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-   
+elif model_type == "transformer":
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float(), torch.from_numpy(y_v).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float(), torch.from_numpy(y_te).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+ 
 elif model_type == "linear_ae" and args.do_multivariate:
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float().reshape(([X_v.shape[0], w_size])), torch.from_numpy(X_v).float().reshape(([X_v.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float().reshape(([X_te.shape[0], w_size])), torch.from_numpy(X_te).float().reshape(([X_te.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
@@ -96,6 +99,11 @@ else:
 
 if model_type == "lstm_ae" or model_type == "conv_ae":
     z_size = 32
+
+d_model = 64
+dim_ff = 256
+n_layer = 3
+n_head = 4
 # Create the model and send it on the gpu device
 if model_type == "lstm_ae":
     model = LstmAE(n_channels, z_size, train_window)
@@ -103,6 +111,9 @@ elif model_type == "conv_ae":
     model = ConvAE(n_channels, z_size) #n_channels
 elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
+elif model_type == "transformer":
+    model = Transformer(n_channels, d_model, dim_ff, n_layer, train_window, n_head)
+
 model = model.to(device) #to_device(model, device)
 print(model)
 
@@ -111,9 +122,11 @@ if args.do_reconstruction:
     # Recover checkpoint
     checkpoint_dir = args.checkpoint_dir
     checkpoint = torch.load(checkpoint_dir)
-
-    model.encoder.load_state_dict(checkpoint['encoder'])
-    model.decoder.load_state_dict(checkpoint['decoder'])
+    if model_type == "transfomer":
+        model.load_state_dict(checkpoint)
+    else:
+        model.encoder.load_state_dict(checkpoint['encoder'])
+        model.decoder.load_state_dict(checkpoint['decoder'])
 
 
     results, w = testing(model, test_loader, device)
@@ -130,8 +143,12 @@ if args.do_reconstruction:
     print(len(reconstruction_val))
     dim_val = X_v.shape[0] * X_v.shape[1]
     dim_test = X_te.shape[0] * X_te.shape[1]
-    predicted_df_val = get_predicted_dataset_big(val[:dim_val], reconstruction_val)
-    predicted_df_test = get_predicted_dataset_big(test[:dim_test], reconstruction_test)
+    if model_type == "transformer":
+        predicted_df_val = get_transformer_dataset(y_v, reconstruction_val, dfs_val, train_window)
+        predicted_df_test = get_transformer_dataset(y_te, reconstruction_test, dfs_test, train_window)
+    else:
+        predicted_df_val = get_predicted_dataset_big(val[:dim_val], reconstruction_val)
+        predicted_df_test = get_predicted_dataset_big(test[:dim_test], reconstruction_test)
 
     threshold_method = args.threshold
     percentile = args.percentile
@@ -142,37 +159,38 @@ if args.do_reconstruction:
     predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
 
     ### Parallel with synthetically generated anomalies on the data
-    ub_an = int(X_te.shape[0] * 0.03)
-    indices_to_zero = [258, 259, 260, 261, 262, 263, 264, 265, 266, 267]
-    synthetic_df = synthetize_anomalies(X_te, ub_an, indices_to_zero)
-    synthetic_df = synthetic_df.reset_index(drop = True)
-    synth = synthetic_df[['generation_kwh']]
-    scaler = MinMaxScaler(feature_range = (0,1))
-    X_synth = scaler.fit_transform(synth)
-    synth_seq = create_sequences(X_synth, train_window, train_window)
+    if args.synthetic_generation:
+        ub_an = int(X_te.shape[0] * 0.03)
+        indices_to_zero = [258, 259, 260, 261, 262, 263, 264, 265, 266, 267]
+        synthetic_df = synthetize_anomalies(X_te, ub_an, indices_to_zero)
+        synthetic_df = synthetic_df.reset_index(drop = True)
+        synth = synthetic_df[['generation_kwh']]
+        scaler = MinMaxScaler(feature_range = (0,1))
+        X_synth = scaler.fit_transform(synth)
+        synth_seq = create_sequences(X_synth, train_window, train_window)
 
-    synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    
-    if model_type == "conv_ae" or model_type == "lstm_ae":
-        synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    elif model_type == "linear_ae":
-        synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size])), torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    else:
         synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    
-    res_s, w_s = testing(model, synth_loader, device)
-    r_s = w_s[0].flatten().detach().cpu().numpy()
-    dim_s = synth_seq.shape[0] * synth_seq.shape[1]
-    df_s = get_predicted_dataset_big(pd.DataFrame(X_synth[:dim_s], columns = ['generation_kwh']), r_s)
+        
+        if model_type == "conv_ae" or model_type == "lstm_ae":
+            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+        elif model_type == "linear_ae":
+            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size])), torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+        else:
+            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+        
+        res_s, w_s = testing(model, synth_loader, device)
+        r_s = w_s[0].flatten().detach().cpu().numpy()
+        dim_s = synth_seq.shape[0] * synth_seq.shape[1]
+        df_s = get_predicted_dataset_big(pd.DataFrame(X_synth[:dim_s], columns = ['generation_kwh']), r_s)
 
-    preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall)
+        preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall)
 
-    tc = synthetic_df[['synthetic_anomaly']]
-    ss = pd.concat([preds_s, tc[:dim_s]], axis = 1)
+        tc = synthetic_df[['synthetic_anomaly']]
+        ss = pd.concat([preds_s, tc[:dim_s]], axis = 1)
 
-    print(classification_report(ss.synthetic_anomaly, ss.predicted_anomaly))
-    anomalized_df = ss[ss.synthetic_anomaly == 1]
-    print(classification_report(anomalized_df.synthetic_anomaly, anomalized_df.predicted_anomaly))
+        print(classification_report(ss.synthetic_anomaly, ss.predicted_anomaly))
+        anomalized_df = ss[ss.synthetic_anomaly == 1]
+        print(classification_report(anomalized_df.synthetic_anomaly, anomalized_df.predicted_anomaly))
     """
     print("EVALUATION: point anomalies VS Contextual")
     predicted_df_test['anomaly_outlier'] = [1 if (el['anomaly']==1 and el['outliers']==1) else 0 for _ , el in predicted_df_test.iterrows()]
