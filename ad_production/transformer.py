@@ -61,7 +61,7 @@ class Transformer(nn.Module):
       return out, enc_x
     
 
-def train_model(num_epochs, model, train_loader, eval_loader, optimizer = torch.optim.Adam, device = 'cpu'):
+def training(num_epochs, model, train_loader, eval_loader, optimizer = torch.optim.Adam, device = 'cpu'):
     criterion = nn.MSELoss().to(device)
     loss_history = []
     optimizer = optimizer(model.parameters())
