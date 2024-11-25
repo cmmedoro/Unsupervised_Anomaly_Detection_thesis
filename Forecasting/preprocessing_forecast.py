@@ -227,6 +227,8 @@ def create_multistep_sequences(dataframe, time_steps, forecast_horizon):
         # check if we are beyond the dataset length for this building
         if end_ix > len(building_data)-1:
             break
+        if end_ix + forecast_horizon > len(building_data)-1:
+            break
         # gather input and output parts of the pattern
         seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix:(end_ix + forecast_horizon), 0]
         output.append(seq_x)
