@@ -28,8 +28,8 @@ else:
 print("Inizio")
 # Original dataset
 #ADSP/Backup_tesi_Carla_sorry_bisogno_di_gpu
-energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
-#energy_df = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/train_features.csv")
+#energy_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/train.csv")
+energy_df = pd.read_csv("/content/drive/MyDrive/Unsupervised_Anomaly_Detection_thesis/train_features.csv")
 # Select some columns from the original dataset
 df = energy_df[['building_id','primary_use', 'timestamp', 'meter_reading', 'sea_level_pressure', 'is_holiday','anomaly', 'air_temperature']]
 
