@@ -37,5 +37,8 @@ def parse_arguments():
 
     parser.add_argument("--do_multivariate", action = "store_true", help = "Whether to perform multivariate trials or not")
 
+    parser.add_argument("--multistep", action = "store_true", help = "Whether to perform multistep prediction")
+    parser.add_argument("--horizon", type = int, default = 7, help = "Choose how many steps to predict")
+
     args = parser.parse_args()
     return args

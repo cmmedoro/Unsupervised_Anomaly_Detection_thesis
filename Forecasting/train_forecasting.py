@@ -93,6 +93,11 @@ if args.do_multivariate:
 else:
     X_train, y_train = create_train_eval_sequences(train, train_window)
     X_val, y_val = create_train_eval_sequences(val, train_window)
+
+if args.multistep:
+    fh = args.horizon
+    X_train, y_train = create_multistep_sequences(train, train_window, fh)
+    X_val, y_val = create_multistep_sequences(val, train_window, fh)
 print(X_train.shape, y_train.shape)
 print(X_val.shape, y_val.shape)
 
@@ -112,7 +117,7 @@ val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_num
 #labels_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.torch.from_numpy(y_train).float().view(([y_train.shape[0], y_train.shape[1], y_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-model = LstmModel(n_channels, 32)
+model = LstmModel(n_channels, 32, fh)
 
 
 print(device)

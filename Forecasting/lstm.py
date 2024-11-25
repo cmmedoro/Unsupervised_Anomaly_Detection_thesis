@@ -10,7 +10,7 @@ import numpy as np
 
 
 class LstmModel(nn.Module):
-  def __init__(self, in_size, latent_size): 
+  def __init__(self, in_size, latent_size, out_size): 
     super().__init__()
     """
     in_size: number of features in input
@@ -22,7 +22,7 @@ class LstmModel(nn.Module):
         )
     self.dropout = nn.Dropout(0.2)
     self.relu = nn.ReLU()
-    self.fc = nn.Linear(latent_size, in_size) #for swat: instead of 1 put in_size
+    self.fc = nn.Linear(latent_size, out_size) #for swat: instead of 1 put in_size
 
     # Initialize weights
     #self.init_weights()
