@@ -221,14 +221,14 @@ def create_multistep_sequences(dataframe, time_steps, forecast_horizon):
   for building_id, gdf in dataframe.groupby("building_id"):
       gdf[['meter_reading']] = scaler.fit_transform(gdf[['meter_reading']])
       building_data = np.array(gdf[['meter_reading']]).astype(float) 
-      for i in range(0, len(building_data), forecast_horizon):
+      for i in range(0, len(building_data) - time_steps - forecast_horizon + 1, forecast_horizon):
         # find the end of this sequence
         end_ix = i + time_steps
         # check if we are beyond the dataset length for this building
-        if end_ix > len(building_data)-1:
-            break
-        if end_ix + forecast_horizon > len(building_data)-1:
-            break
+        #if end_ix > len(building_data)-1:
+         #   break
+        #if end_ix + forecast_horizon > len(building_data)-1:
+        #    break
         # gather input and output parts of the pattern
         seq_x, seq_y = building_data[i:end_ix, :], building_data[end_ix:(end_ix + forecast_horizon), 0]
         output.append(seq_x)

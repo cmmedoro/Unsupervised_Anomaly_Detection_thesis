@@ -84,6 +84,11 @@ else:
     X_train, y_train = create_train_eval_sequences(train, train_window)
     X_test, y_test = create_train_eval_sequences(test, train_window)
     X_val, y_val = create_train_eval_sequences(val, train_window)
+if args.multistep:
+    fh = args.horizon
+    X_train, y_train = create_multistep_sequences(train, train_window, fh)
+    X_val, y_val = create_multistep_sequences(val, train_window, fh)
+    X_test, y_test = create_multistep_sequences(test, train_window)
 
 BATCH_SIZE =  args.batch_size
 N_EPOCHS = args.epochs
@@ -105,7 +110,7 @@ test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_nu
 
 z_size = 32
 # Create the model and send it on the gpu device
-model = LstmModel(n_channels, 32)
+model = LstmModel(n_channels, 32, fh)
 model = model.to(device) #to_device(model, device)
 print(model)
 
