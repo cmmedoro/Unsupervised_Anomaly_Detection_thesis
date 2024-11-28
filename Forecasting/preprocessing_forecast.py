@@ -167,7 +167,8 @@ def resampling_daily(energy_df):
             labels.append(0)
     resampled.anomaly = labels
     resampled_dict[id] = resampled
-  resampled_df = pd.DataFrame.from_dict(resampled_dict)
+  #resampled_df = pd.DataFrame.from_dict(resampled_dict)
+  resampled_df = pd.concat(resampled_dict.values())
   return resampled_df
 
 ### SPLIT THE DATASET IN TRAIN, VAL, TEST ###
