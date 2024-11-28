@@ -39,9 +39,10 @@ df1 = pd.concat(dfs_dict.values())
 #lags = [1, -1]
 #df1 = create_diff_lag_features(df1, lags)
 # 3) Add trigonometric features
-df2 = add_trigonometric_features(df1)
-lags = [-1, 24, -24, 168, -168]
-df2 = create_diff_lag_features(df2, lags)
+#df2 = add_trigonometric_features(df1)
+#lags = [-1, 24, -24, 168, -168]
+#df2 = create_diff_lag_features(df2, lags)
+df2 = resampling_daily(df1)
 
 # Split the dataset into train, validation and test
 dfs_train, dfs_val, dfs_test = train_val_test_split(df2)

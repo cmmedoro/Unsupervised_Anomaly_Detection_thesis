@@ -43,13 +43,14 @@ df1 = pd.concat(dfs_dict.values())
 #lags = [1, -1]
 #df1 = create_diff_lag_features(df1, lags)
 # 3) Add trigonometric features
-df2 = add_trigonometric_features(df1)
+#df2 = add_trigonometric_features(df1)
 # 4) Add lag features and differences with respect to the meter_reading value
 # N.B.: we are using the shift function of Dataframes ---> if we pass a positive number as lag it means that we are going to link each
 # datapoint to a previous one, whereas when we pass a negative value we relate the datapoint to a future observation
-lags = [-1, 24, -24, 168, -168]
-df2 = create_diff_lag_features(df2, lags)
-
+#lags = [-1, 24, -24, 168, -168]
+#df2 = create_diff_lag_features(df2, lags)
+#RESAMPLING
+df2 = resampling_daily(df1)
 # Split the dataset into train, validation and test
 dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
 train = pd.concat(dfs_train.values())

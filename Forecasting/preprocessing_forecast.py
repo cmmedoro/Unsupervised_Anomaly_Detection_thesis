@@ -154,6 +154,22 @@ def add_rolling_feature(energy_df, window=3):
         energy_df.update(energy_df[[f'{col}_mean_lag{window}', f'{col}_std_lag{window}', f'{col}_mdn_lag{window}']].fillna(0))
     return energy_df
 
+def resampling_daily(energy_df):
+  group_df = energy_df.groupby('building_id')
+  resampled_dict = {}
+  for id, group in group_df:
+    resampled = group.resample("D").sum()
+    labels = []
+    for k, v in resampled.iterrows():
+        if v.anomaly >= 1:
+            labels.append(1)
+        else:
+            labels.append(0)
+    resampled.anomaly = labels
+    resampled_dict[id] = resampled
+  resampled_df = pd.DataFrame.from_dict(resampled_dict, orient = "index")
+  return resampled_df
+
 ### SPLIT THE DATASET IN TRAIN, VAL, TEST ###
 
 def split(dataframe, buildings_id):
