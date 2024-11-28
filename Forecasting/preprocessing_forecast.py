@@ -159,7 +159,7 @@ def resampling_daily(energy_df):
   resampled_dict = {}
   for id, group in group_df:
     gdf = group[['meter_reading', 'anomaly']]
-    resampled = gdf.resample("12H").sum()
+    resampled = gdf.resample("6H").sum()
     labels = []
     for k, v in resampled.iterrows():
         if v.anomaly >= 1:
