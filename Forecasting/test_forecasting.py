@@ -111,7 +111,7 @@ test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_nu
 
 z_size = 32
 # Create the model and send it on the gpu device
-model = LstmModel(n_channels, 32, fh)
+model = LstmModel(n_channels, 32, 1)
 model = model.to(device) #to_device(model, device)
 print(model)
 

@@ -118,7 +118,7 @@ val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_num
 #labels_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.torch.from_numpy(y_train).float().view(([y_train.shape[0], y_train.shape[1], y_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 #val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-model = LstmModel(n_channels, 32, fh)
+model = LstmModel(n_channels, 32, 1)
 
 
 print(device)
