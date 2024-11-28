@@ -158,16 +158,18 @@ def resampling_daily(energy_df):
   group_df = energy_df.groupby('building_id')
   resampled_dict = {}
   for id, group in group_df:
-    resampled = group.resample("D").sum()
+    gdf = group[['meter_reading', 'anomaly']]
+    resampled = gdf.resample("D").sum()
     labels = []
     for k, v in resampled.iterrows():
         if v.anomaly >= 1:
             labels.append(1)
         else:
             labels.append(0)
-    resampled.anomaly = labels
+    resampled['anomaly'] = labels
+    resampled['building_id'] = id
     resampled_dict[id] = resampled
-  #resampled_df = pd.DataFrame.from_dict(resampled_dict)
+  #resampled_df = pd.DataFrame.from_dict(resampled_dict, orient = 'index')
   resampled_df = pd.concat(resampled_dict.values())
   return resampled_df
 
