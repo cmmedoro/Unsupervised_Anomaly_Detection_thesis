@@ -66,9 +66,9 @@ N_EPOCHS = args.epochs
 hidden_size = args.hidden_size
 
 # batch_size, window_length, n_features = X_train.shape
-batch, window_len, n_channels = X_train.shape
+batch, window_len, n_channels = X_t.shape
 
-w_size = X_train.shape[1] * X_train.shape[2]
+w_size = X_t.shape[1] * X_t.shape[2]
 z_size = int(w_size * hidden_size) 
 
 if model_type == "conv_ae" or model_type == "lstm_ae" :
