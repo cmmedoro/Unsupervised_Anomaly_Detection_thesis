@@ -35,7 +35,8 @@ else:
 
 #### Open the dataset ####
 # Original dataset
-production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/ad_production_dc.csv")
+#production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/ad_production_dc.csv")
+production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/ad_production_dc.csv")
 production_df['datetime'] = pd.to_datetime(production_df.datetime)
 # Resampling of dates
 production_df = impute_missing_dates(production_df)
