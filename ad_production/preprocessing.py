@@ -134,7 +134,7 @@ def create_sequences(dataframe, time_steps, stride = 1):
         #end of sequence
         end_idx = i + time_steps
         if end_idx <= len(dataframe)+1:
-            slice = dataframe[i: (i + time_steps -1), :] #.loc
+            slice = dataframe[i: (i + time_steps), :] #.loc
         sequences.append(slice)
     return np.stack(sequences)
 
