@@ -33,6 +33,7 @@ def get_transformer_dataset_big(dataset, forecast, train_window):
       dfs_dict_1[country_code] = gdf[train_window:]
   predicted_df = pd.concat(dfs_dict_1.values())
   predicted_df['forecast'] = forecast
+  predicted_df['anomaly_score'] = (predicted_df.solar_generation_actual - predicted_df.forecast)**2
   predicted_df['abs_loss'] = np.abs(predicted_df.solar_generation_actual - predicted_df.forecast)
   predicted_df['rel_loss'] = np.abs((predicted_df['forecast']-predicted_df['solar_generation_actual'])/predicted_df['forecast'])
   return predicted_df
@@ -45,6 +46,7 @@ def get_predicted_dataset_big(test, reconstruction):
       dict_test[code] = gdf
     predicted_df_test = pd.concat(dict_test.values())
     predicted_df_test['reconstruction'] = reconstruction
+    predicted_df_test['anomaly_score'] = (predicted_df_test.solar_generation_actual - predicted_df_test.reconstruction)**2
     predicted_df_test['abs_loss'] = np.abs(predicted_df_test.solar_generation_actual - predicted_df_test.reconstruction)
     predicted_df_test['rel_loss'] = np.abs((predicted_df_test['reconstruction']-predicted_df_test['solar_generation_actual'])/predicted_df_test['reconstruction'])
     return predicted_df_test
@@ -111,6 +113,22 @@ def threshold_weighted_rel_loss_iqr(predicted_df_val, predicted_df_test, weight_
   predicted_df_test['predicted_anomaly'] = predicted_df_test['rel_loss'] > predicted_df_test['weighted_threshold']
   return predicted_df_test
 
+def threshold_anom_score_perc(predicted_df_val, predicted_df_test, percentile):
+   anom_val_score = predicted_df_val.anomaly_score.values
+   threshold = np.percentile(anom_val_score, percentile)
+   predicted_df_test['threshold'] = threshold
+   predicted_df_test['predicted_anomaly'] = predicted_df_test.anomaly_score > predicted_df_test.threshold
+   return predicted_df_test
+
+def threshold_anom_score_iqr_val(predicted_df_val, predicted_df_test):
+    #Loss relativa
+    val_as = predicted_df_val['anomaly_score'].values
+    #Interquartile threshold
+    threshold = (np.percentile(np.squeeze(val_as), 75)) + 1.5 *((np.percentile(np.squeeze(val_as), 75))-(np.percentile(np.squeeze(val_as), 25)))
+    predicted_df_test['threshold'] = threshold
+    predicted_df_test['predicted_anomaly'] = predicted_df_test['anomaly_score'] > predicted_df_test['threshold']
+    return predicted_df_test
+
 def anomaly_detection(predicted_df_val, predicted_df_test, method_nr, percentile, weight_overall = 0.5):
   if method_nr == 0:
     predicted_df = threshold_abs_loss(predicted_df_val, percentile, predicted_df_test)
@@ -126,6 +144,10 @@ def anomaly_detection(predicted_df_val, predicted_df_test, method_nr, percentile
     predicted_df = threshold_ewma(predicted_df_test)
   elif method_nr == 6:
     predicted_df = threshold_weighted_rel_loss_iqr(predicted_df_val, predicted_df_test, weight_overall)
+  elif method_nr == 7:
+     predicted_df = threshold_anom_score_perc(predicted_df_val, predicted_df_test, percentile)
+  elif method_nr == 8:
+     predicted_df = threshold_anom_score_iqr_val(predicted_df_val, predicted_df_test)
   predicted_df['predicted_anomaly']=predicted_df['predicted_anomaly'].replace(False,0)
   predicted_df['predicted_anomaly']=predicted_df['predicted_anomaly'].replace(True,1)
   return predicted_df
