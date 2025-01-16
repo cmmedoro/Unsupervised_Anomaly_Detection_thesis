@@ -33,6 +33,9 @@ def parse_arguments():
     parser.add_argument("--weights_overall", type = float, default = 0.5, help = "Choose a weight for anomaly detection")
 
     parser.add_argument("--synthetic_generation", action = "store_true", help = "Whether to perform synthetic generation of anomalies or not")
+    parser.add_argument("--contamination", type = float, default = 0.03, help = "Choose a percentage of anomalies to inject")
+    parser.add_argument("--period", type = int, default = 12, help = "Choose the length of an anomaly")
+    parser.add_argument("--anom_amplitude_factor", type = float, default = 0.5, help = "Choose the amplitude of the injected anomalies")
 
     parser.add_argument("--do_multivariate", action = "store_true", help = "Whether to perform multivariate trials or not")
 

@@ -95,6 +95,7 @@ def training(num_epochs, model, train_loader, eval_loader, device, optimizer = t
 
         loss_history.append((avg_loss, avg_val_loss))
         print(f'Epoch {epoch+1}/{num_epochs}, Train loss: {avg_loss}, Validation loss: {avg_val_loss}')
+    return loss_history
 
 
 def testing(model, test_loader, device):

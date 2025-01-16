@@ -35,8 +35,8 @@ else:
 
 #### Open the dataset ####
 # Original dataset
-#production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/ad_production_dc.csv")
-production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/ad_production_dc.csv")
+production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/ad_production_dc.csv")
+#production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/ad_production_dc.csv")
 production_df['datetime'] = pd.to_datetime(production_df.datetime)
 # Resampling of dates
 production_df = impute_missing_dates(production_df)
@@ -117,4 +117,4 @@ torch.save({
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 #else:
  #   np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_outputMultiFeat_15_06.npy', history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_multi_output!Feat_01_07.npy', history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_ad_prod_conv_ae_03_01.npy', history)

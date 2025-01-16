@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import MinMaxScaler
-from postprocessing import get_predicted_dataset_big, anomaly_detection, get_transformer_dataset
+from postprocessing import get_predicted_dataset_big, anomaly_detection, get_transformer_dataset_big, generate_anomalous_dataset 
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file as pars
@@ -144,11 +144,11 @@ if args.do_reconstruction:
     dim_val = X_v.shape[0] * X_v.shape[1]
     dim_test = X_te.shape[0] * X_te.shape[1]
     if model_type == "transformer":
-        predicted_df_val = get_transformer_dataset(y_v, reconstruction_val, dfs_val, train_window)
-        predicted_df_test = get_transformer_dataset(y_te, reconstruction_test, dfs_test, train_window)
+        predicted_df_val = get_transformer_dataset_big(val, reconstruction_val, train_window)
+        predicted_df_test = get_transformer_dataset_big(test, reconstruction_test, train_window)
     else:
-        predicted_df_val = get_predicted_dataset_big(val[:dim_val], reconstruction_val)
-        predicted_df_test = get_predicted_dataset_big(test[:dim_test], reconstruction_test)
+        predicted_df_val = get_predicted_dataset_big(val, reconstruction_val)
+        predicted_df_test = get_predicted_dataset_big(test, reconstruction_test)
 
     threshold_method = args.threshold
     percentile = args.percentile
@@ -160,28 +160,28 @@ if args.do_reconstruction:
 
     ### Parallel with synthetically generated anomalies on the data
     if args.synthetic_generation:
-        ub_an = int(X_te.shape[0] * 0.03)
-        indices_to_zero = [258, 259, 260, 261, 262, 263, 264, 265, 266, 267]
-        synthetic_df = synthetize_anomalies(X_te, ub_an, indices_to_zero)
-        synthetic_df = synthetic_df.reset_index(drop = True)
-        synth = synthetic_df[['generation_kwh']]
-        scaler = MinMaxScaler(feature_range = (0,1))
-        X_synth = scaler.fit_transform(synth)
-        synth_seq = create_sequences(X_synth, train_window, train_window)
+        contamination = args.contamination
+        period = args.period
+        anom_amplitude_factor = args.anom_amplitude_factor
+        synthetic_df = generate_anomalous_dataset(predicted_df_test, contamination, period, anom_amplitude_factor)
+        if model_type == "transformer":
+            X_s, y_s = create_transformer_sequences_big(synthetic_df, train_window)
+        else:
+            X_s = create_sequences_big(synthetic_df, train_window, train_window)
 
-        synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+        synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         
         if model_type == "conv_ae" or model_type == "lstm_ae":
-            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         elif model_type == "linear_ae":
-            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size])), torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size])), torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         else:
-            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_seq).float().view(([synth_seq.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+            synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         
         res_s, w_s = testing(model, synth_loader, device)
         r_s = w_s[0].flatten().detach().cpu().numpy()
-        dim_s = synth_seq.shape[0] * synth_seq.shape[1]
-        df_s = get_predicted_dataset_big(pd.DataFrame(X_synth[:dim_s], columns = ['generation_kwh']), r_s)
+        dim_s = X_s.shape[0] * X_s.shape[1]
+        df_s = get_predicted_dataset_big(synthetic_df, r_s)
 
         preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall)
 
