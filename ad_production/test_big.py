@@ -179,17 +179,17 @@ if args.do_reconstruction:
             synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         
         res_s, w_s = testing(model, synth_loader, device)
-        r_s = w_s[0].flatten().detach().cpu().numpy()
+        r_s = np.concatenate([torch.stack(w_s[:-1]).flatten().detach().cpu().numpy(), w_s[-1].flatten().detach().cpu().numpy()])
         dim_s = X_s.shape[0] * X_s.shape[1]
         df_s = get_predicted_dataset_big(synthetic_df, r_s)
 
         preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall)
 
-        tc = synthetic_df[['synthetic_anomaly']]
-        ss = pd.concat([preds_s, tc[:dim_s]], axis = 1)
+        #tc = synthetic_df[['synthetic_anomaly']]
+        #ss = pd.concat([preds_s, tc[:dim_s]], axis = 1)
 
-        print(classification_report(ss.synthetic_anomaly, ss.predicted_anomaly))
-        anomalized_df = ss[ss.synthetic_anomaly == 1]
+        print(classification_report(preds_s.synthetic_anomaly, preds_s.predicted_anomaly))
+        anomalized_df = preds_s[preds_s.synthetic_anomaly == 1]
         print(classification_report(anomalized_df.synthetic_anomaly, anomalized_df.predicted_anomaly))
     """
     print("EVALUATION: point anomalies VS Contextual")
