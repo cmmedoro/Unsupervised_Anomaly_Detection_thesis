@@ -17,6 +17,7 @@ def get_predicted_dataset(test, reconstruction):
 
 def get_transformer_dataset(y_test, forecast, df_test, train_window):
   # This will be used both for the test set and for the validation set, which is going to be used as reference for thresholds in some cases
+  # per dataset piccolo in realtà
   predicted_test = pd.DataFrame(y_test, columns = ['solar_generation_actual'])
   predicted_test['reconstruction'] = forecast
   predicted_test['utc_timestamp'] = df_test[:-train_window].index

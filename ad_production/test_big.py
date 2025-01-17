@@ -37,7 +37,6 @@ elif model_type == "transformer":
     from transformer import *
 from utils_ae import *
 
-#device = get_default_device()
 
 if torch.cuda.is_available():
     device =  torch.device('cuda')

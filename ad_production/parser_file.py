@@ -38,7 +38,7 @@ def parse_arguments():
     parser.add_argument("--period", type = int, default = 12, help = "Choose the length of an anomaly")
     parser.add_argument("--anom_amplitude_factor", type = float, default = 0.5, help = "Choose the amplitude of the injected anomalies")
 
-    parser.add_argument("--do_multivariate", action = "store_true", help = "Whether to perform multivariate trials or not")
+    #parser.add_argument("--do_multivariate", action = "store_true", help = "Whether to perform multivariate trials or not")
 
     args = parser.parse_args()
     return args
