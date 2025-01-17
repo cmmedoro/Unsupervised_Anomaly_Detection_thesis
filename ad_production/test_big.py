@@ -1,4 +1,4 @@
-from preprocessing import create_transformer_sequences_big, impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies
+from preprocessing import create_transformer_sequences_big, impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies, create_test_sequences_big
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import MinMaxScaler
-from postprocessing import get_predicted_dataset_big, anomaly_detection, get_transformer_dataset_big, generate_anomalous_dataset 
+from postprocessing import get_predicted_dataset_big, anomaly_detection, get_transformer_dataset_big, generate_anomalous_dataset , get_predicted_synthetic_dataset_big
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file as pars
@@ -67,9 +67,9 @@ if model_type == "transformer":
     X_v, y_v = create_transformer_sequences_big(dfs_val, train_window)
     X_te, y_te = create_transformer_sequences_big(dfs_test, train_window)
 else:
-    X_t = create_sequences_big(dfs_train, train_window)
-    X_v = create_sequences_big(dfs_val, train_window, train_window)
-    X_te = create_sequences_big(dfs_test, train_window, train_window)
+    X_t = create_test_sequences_big(dfs_train, train_window)
+    X_v = create_test_sequences_big(dfs_val, train_window, train_window)
+    X_te = create_test_sequences_big(dfs_test, train_window, train_window)
 
 
 BATCH_SIZE =  args.batch_size
@@ -153,10 +153,11 @@ if args.do_reconstruction:
     threshold_method = args.threshold
     percentile = args.percentile
     weight_overall = args.weights_overall
+    k = args.k
 
     print("Method: ", threshold_method)
 
-    predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall)
+    predicted_df_test = anomaly_detection(predicted_df_val, predicted_df_test, threshold_method, percentile, weight_overall, k)
 
     ### Parallel with synthetically generated anomalies on the data
     if args.synthetic_generation:
@@ -167,7 +168,7 @@ if args.do_reconstruction:
         if model_type == "transformer":
             X_s, y_s = create_transformer_sequences_big(synthetic_df, train_window)
         else:
-            X_s = create_sequences_big(synthetic_df, train_window, train_window)
+            X_s = create_test_sequences_big(synthetic_df, train_window, train_window)
 
         synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         
@@ -181,7 +182,7 @@ if args.do_reconstruction:
         res_s, w_s = testing(model, synth_loader, device)
         r_s = np.concatenate([torch.stack(w_s[:-1]).flatten().detach().cpu().numpy(), w_s[-1].flatten().detach().cpu().numpy()])
         dim_s = X_s.shape[0] * X_s.shape[1]
-        df_s = get_predicted_dataset_big(synthetic_df, r_s)
+        df_s = get_predicted_synthetic_dataset_big(synthetic_df, r_s)
 
         preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall)
 

@@ -31,6 +31,7 @@ def parse_arguments():
     parser.add_argument("--threshold", type = int, default = 4, help = "Choose a threshold for anomaly detection")
     parser.add_argument("--percentile", type = float, default = 0.95, help = "Choose a percentile for anomaly detection")
     parser.add_argument("--weights_overall", type = float, default = 0.5, help = "Choose a weight for anomaly detection")
+    parser.add_argument("--k", type = float, default = 1.5, help = "Choose a k for anomaly detection")
 
     parser.add_argument("--synthetic_generation", action = "store_true", help = "Whether to perform synthetic generation of anomalies or not")
     parser.add_argument("--contamination", type = float, default = 0.03, help = "Choose a percentage of anomalies to inject")

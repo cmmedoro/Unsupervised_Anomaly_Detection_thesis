@@ -90,37 +90,37 @@ def threshold_rel_loss(val, percentile, predicted_df):
   predicted_df['predicted_anomaly'] = predicted_df['rel_loss'] > predicted_df['threshold']
   return predicted_df
 
-def threshold_iqr_rel_loss(val, predicted_df):
+def threshold_iqr_rel_loss(val, predicted_df, k):
   #Loss relativa
   val_mre_loss = val['rel_loss'].values
   #Interquartile threshold
-  threshold = (np.percentile(np.squeeze(val_mre_loss), 75)) + 1.5 *((np.percentile(np.squeeze(val_mre_loss), 75))-(np.percentile(np.squeeze(val_mre_loss), 25)))
+  threshold = (np.percentile(np.squeeze(val_mre_loss), 75)) + k *((np.percentile(np.squeeze(val_mre_loss), 75))-(np.percentile(np.squeeze(val_mre_loss), 25)))
   predicted_df['threshold'] = threshold
   predicted_df['predicted_anomaly'] = predicted_df['rel_loss'] > predicted_df['threshold']
   return predicted_df
 
-def threshold_iqr_test(predicted_df):
+def threshold_iqr_test(predicted_df, k):
   #calculate threshold on relative loss quartiles but only on test, and in this case per building
   test_mre_loss = predicted_df['rel_loss'].values
-  threshold = (np.percentile(np.squeeze(test_mre_loss), 75)) + 1.5 *((np.percentile(np.squeeze(test_mre_loss), 75))-(np.percentile(np.squeeze(test_mre_loss), 25)))
+  threshold = (np.percentile(np.squeeze(test_mre_loss), 75)) + k *((np.percentile(np.squeeze(test_mre_loss), 75))-(np.percentile(np.squeeze(test_mre_loss), 25)))
   predicted_df['threshold']= threshold
   predicted_df['predicted_anomaly'] = predicted_df['rel_loss'] > predicted_df['threshold']
   return predicted_df
 
-def threshold_ewma(predicted_df):
+def threshold_ewma(predicted_df, k):
   test_mre_loss= predicted_df['rel_loss']
   predicted_df['ewma']=test_mre_loss.ewm(halflife=24, adjust=True).mean()#alpha=1#com=0.5
   predicted_df['difference']= np.abs(predicted_df['ewma']- predicted_df['rel_loss'])
-  predicted_df['threshold'] = (np.percentile(np.squeeze(predicted_df['difference'].values), 75)) + 1.5 *((np.percentile(np.squeeze(predicted_df['difference'].values), 75))-(np.percentile(np.squeeze(predicted_df['difference'].values), 25)))
+  predicted_df['threshold'] = (np.percentile(np.squeeze(predicted_df['difference'].values), 75)) + k *((np.percentile(np.squeeze(predicted_df['difference'].values), 75))-(np.percentile(np.squeeze(predicted_df['difference'].values), 25)))
 
   predicted_df['predicted_anomaly'] = predicted_df['difference'] > predicted_df['threshold']
   return predicted_df
 
-def threshold_weighted_rel_loss_iqr(predicted_df_val, predicted_df_test, weight_overall):
+def threshold_weighted_rel_loss_iqr(predicted_df_val, predicted_df_test, weight_overall, k):
   val_mre_loss = predicted_df_val['rel_loss'].values
-  threshold = (np.percentile(np.squeeze(val_mre_loss), 75)) + 1.5 *((np.percentile(np.squeeze(val_mre_loss), 75))-(np.percentile(np.squeeze(val_mre_loss), 25)))
+  threshold = (np.percentile(np.squeeze(val_mre_loss), 75)) + k *((np.percentile(np.squeeze(val_mre_loss), 75))-(np.percentile(np.squeeze(val_mre_loss), 25)))
   overall_threshold = threshold
-  weighted_threshold = (np.percentile(np.squeeze(predicted_df_test['rel_loss'].values), 75)) + 1.5 *((np.percentile(np.squeeze(predicted_df_test['rel_loss'].values), 75))-(np.percentile(np.squeeze(predicted_df_test['rel_loss'].values), 25)))
+  weighted_threshold = (np.percentile(np.squeeze(predicted_df_test['rel_loss'].values), 75)) + k *((np.percentile(np.squeeze(predicted_df_test['rel_loss'].values), 75))-(np.percentile(np.squeeze(predicted_df_test['rel_loss'].values), 25)))
   new_threshold = weight_overall * overall_threshold + (1-weight_overall) * weighted_threshold
   predicted_df_test['weighted_threshold']=new_threshold
   predicted_df_test['predicted_anomaly'] = predicted_df_test['rel_loss'] > predicted_df_test['weighted_threshold']
@@ -133,16 +133,16 @@ def threshold_anom_score_perc(predicted_df_val, predicted_df_test, percentile):
    predicted_df_test['predicted_anomaly'] = predicted_df_test.anomaly_score > predicted_df_test.threshold
    return predicted_df_test
 
-def threshold_anom_score_iqr_val(predicted_df_val, predicted_df_test):
+def threshold_anom_score_iqr_val(predicted_df_val, predicted_df_test, k):
     #Loss relativa
     val_as = predicted_df_val['anomaly_score'].values
     #Interquartile threshold
-    threshold = (np.percentile(np.squeeze(val_as), 75)) + 1.5 *((np.percentile(np.squeeze(val_as), 75))-(np.percentile(np.squeeze(val_as), 25)))
+    threshold = (np.percentile(np.squeeze(val_as), 75)) + k *((np.percentile(np.squeeze(val_as), 75))-(np.percentile(np.squeeze(val_as), 25)))
     predicted_df_test['threshold'] = threshold
     predicted_df_test['predicted_anomaly'] = predicted_df_test['anomaly_score'] > predicted_df_test['threshold']
     return predicted_df_test
 
-def anomaly_detection(predicted_df_val, predicted_df_test, method_nr, percentile, weight_overall = 0.5):
+def anomaly_detection(predicted_df_val, predicted_df_test, method_nr, percentile, weight_overall = 0.5, k = 1.5):
   if method_nr == 0:
     predicted_df = threshold_abs_loss(predicted_df_val, percentile, predicted_df_test)
   elif method_nr == 1:
@@ -150,17 +150,17 @@ def anomaly_detection(predicted_df_val, predicted_df_test, method_nr, percentile
   elif method_nr == 2:
     predicted_df = threshold_rel_loss(predicted_df_val, percentile, predicted_df_test)
   elif method_nr == 3:
-    predicted_df = threshold_iqr_rel_loss(predicted_df_val, predicted_df_test)
+    predicted_df = threshold_iqr_rel_loss(predicted_df_val, predicted_df_test, k)
   elif method_nr == 4:
-    predicted_df = threshold_iqr_test(predicted_df_test)
+    predicted_df = threshold_iqr_test(predicted_df_test, k)
   elif method_nr == 5:
-    predicted_df = threshold_ewma(predicted_df_test)
+    predicted_df = threshold_ewma(predicted_df_test, k)
   elif method_nr == 6:
-    predicted_df = threshold_weighted_rel_loss_iqr(predicted_df_val, predicted_df_test, weight_overall)
+    predicted_df = threshold_weighted_rel_loss_iqr(predicted_df_val, predicted_df_test, weight_overall, k)
   elif method_nr == 7:
      predicted_df = threshold_anom_score_perc(predicted_df_val, predicted_df_test, percentile)
   elif method_nr == 8:
-     predicted_df = threshold_anom_score_iqr_val(predicted_df_val, predicted_df_test)
+     predicted_df = threshold_anom_score_iqr_val(predicted_df_val, predicted_df_test, k)
   predicted_df['predicted_anomaly']=predicted_df['predicted_anomaly'].replace(False,0)
   predicted_df['predicted_anomaly']=predicted_df['predicted_anomaly'].replace(True,1)
   return predicted_df
