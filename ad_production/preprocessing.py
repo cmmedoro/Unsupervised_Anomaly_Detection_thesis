@@ -155,6 +155,36 @@ def create_sequences_big(dataframe, time_steps, stride = 1):
           sequences.append(slice)
     return np.stack(sequences)
 
+def create_synthetic_sequences_big(dataframe, time_steps, stride = 1):
+    scaler = MinMaxScaler(feature_range = (0,1))
+    sequences = []
+    for code, gdf in dataframe.groupby('country_code'):
+      production = gdf[['new_solar_generation_actual']]
+      X = scaler.fit_transform(production)
+      for i in range(0, len(production) - time_steps + 1, stride):
+          #end of sequence
+          end_idx = i + time_steps
+          #if end_idx <= len(dataframe)+1:
+           #   slice = X[i: (i + time_steps -1), :]
+          slice = X[i: (i + time_steps), :]
+          sequences.append(slice)
+    return np.stack(sequences)
+
+def create_test_sequences_big(dataframe, time_steps, stride = 1):
+    scaler = MinMaxScaler(feature_range = (0,1))
+    sequences = []
+    for code, gdf in dataframe.groupby('country_code'):
+      production = gdf[['solar_generation_actual']]
+      X = scaler.fit_transform(production)
+      for i in range(0, len(production) - time_steps + 1, stride):
+          #end of sequence
+          end_idx = i + time_steps
+          #if end_idx <= len(dataframe)+1:
+           #   slice = X[i: (i + time_steps -1), :]
+          slice = X[i: (i + time_steps), :]
+          sequences.append(slice)
+    return np.stack(sequences)
+
 def create_transformer_sequences_big(dataframe, time_steps, stride = 1):
     scaler = MinMaxScaler(feature_range = (0,1))
     sequences = []
