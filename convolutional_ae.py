@@ -64,16 +64,17 @@ class ConvAE(nn.Module):
   def training_step(self, batch, criterion, n):
     z = self.encoder(batch)
     w = self.decoder(z)
-    #print("W_loss: ", w.size())
-    #print("Batch_loss: ", batch.size())
-    loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
+    # For the multivariate case with output one feature
+    batch_n = batch[:, :, 0].unsqueeze(-1)
+    loss = criterion(w, batch_n)#torch.mean((batch-w)**2) #loss = mse
     return loss
 
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
         z = self.encoder(batch)
         w = self.decoder(z)
-        loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
+        batch_n = batch[:, :, 0].unsqueeze(-1)
+        loss = criterion(w, batch_n)#torch.mean((batch-w)**2) #loss = mse
     return loss#, w
         
   """def validation_epoch_end(self, outputs):

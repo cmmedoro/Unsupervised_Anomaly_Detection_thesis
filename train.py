@@ -123,10 +123,13 @@ if model_type == "conv_ae" or model_type == "lstm_ae" or model_type == "usad_con
     #Credo di dover cambiare X_train.shape[0], w_size, X_train.shape[2] con X_train.shape[0], X_train.shape[1], X_train.shape[2]
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().view(([X_train.shape[0], X_train.shape[1], X_train.shape[2]]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().view(([X_val.shape[0],X_train.shape[1], X_train.shape[2]]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+elif model_type == "linear_ae" and args.do_multivariate:
+    train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().reshape(([X_train.shape[0], w_size])), torch.from_numpy(y_train).float().reshape(([y_train.shape[0], window_len]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
+    val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().reshape(([X_val.shape[0], w_size])), torch.from_numpy(y_val).float().reshape(([y_val.shape[0], window_len]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 else:
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_train).float().reshape(([X_train.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_val).float().reshape(([X_val.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-
+    
 if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "vae":
     z_size = 32
 # Create the model and send it on the gpu device
@@ -172,4 +175,4 @@ else:
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 #else:
  #   np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_outputMultiFeat_15_06.npy', history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_output1Feat_17_06.npy', history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_linear_ae_multi_output!Feat_01_07.npy', history)

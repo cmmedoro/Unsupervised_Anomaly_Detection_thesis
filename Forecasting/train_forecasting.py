@@ -50,7 +50,8 @@ df1 = pd.concat(dfs_dict.values())
 #lags = [-1, 24, -24, 168, -168]
 #df2 = create_diff_lag_features(df2, lags)
 #RESAMPLING
-df2 = resampling_daily(df1)
+#df2 = resampling_daily(df1)
+df2 = df1
 # Split the dataset into train, validation and test
 dfs_train, dfs_val, dfs_test = train_val_test_split(df2)
 train = pd.concat(dfs_train.values())

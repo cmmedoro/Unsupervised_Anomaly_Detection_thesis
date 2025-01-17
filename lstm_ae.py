@@ -28,7 +28,7 @@ class Decoder(nn.Module):
             # input and output tensors are provided as (batch, seq_len, feature(size))
         )
     self.dropout = nn.Dropout(0.2)
-    self.output_layer = nn.Linear(latent_size, out_size)
+    self.output_layer = nn.Linear(latent_size, out_size) 
         
   def forward(self, z):
     batch = z.size()[1]
@@ -58,14 +58,18 @@ class LstmAE(nn.Module):
   def training_step(self, batch, criterion, n):
     z = self.encoder(batch)
     w = self.decoder(z)
-    loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
+    batch_n = batch[:, :, 0].unsqueeze(-1)
+    loss = criterion(w, batch_n)
+    #loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
     return loss
 
   def validation_step(self, batch, criterion, n):
     with torch.no_grad():
         z = self.encoder(batch)
         w = self.decoder(z)
-        loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
+        batch_n = batch[:, :, 0].unsqueeze(-1)
+        loss = criterion(w, batch_n)
+        #loss = criterion(w, batch)#torch.mean((batch-w)**2) #loss = mse
     return loss
     
   def epoch_end(self, epoch, result, result_train):
@@ -118,11 +122,11 @@ def testing(model, test_loader, device):
             w=model.decoder(model.encoder(batch))
             # Need to squeeze the batch and reconstruction to compute correctly the anomaly score
             # This because the input and the reconstruction are 3-D tensors, so we need to turn them into 2-D
-            batch_s = batch.reshape(-1, batch.size()[1] * batch.size()[2])
-            w_s = w.reshape(-1, w.size()[1] * w.size()[2])
-            #batch_s = batch[:, :, 0]
-            #batch_s = batch_s.reshape(batch.size()[0], batch.size()[1], 1)
-            #w_s = w
+            #batch_s = batch.reshape(-1, batch.size()[1] * batch.size()[2])
+            #w_s = w.reshape(-1, w.size()[1] * w.size()[2])
+            batch_s = batch[:, :, 0]
+            batch_s = batch_s.reshape(batch.size()[0], batch.size()[1], 1)
+            w_s = w
             #results.append(criterion(w, batch))
             results.append(torch.mean((batch_s-w_s)**2,axis=1))
             reconstruction.append(w)
