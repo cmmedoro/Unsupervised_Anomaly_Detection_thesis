@@ -122,7 +122,7 @@ if args.do_reconstruction:
     # Recover checkpoint
     checkpoint_dir = args.checkpoint_dir
     checkpoint = torch.load(checkpoint_dir, map_location = 'cpu')
-    if model_type == "transfomer":
+    if model_type == "transformer":
         model.load_state_dict(checkpoint)
     else:
         model.encoder.load_state_dict(checkpoint['encoder'])
