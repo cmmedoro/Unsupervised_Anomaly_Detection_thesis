@@ -37,7 +37,8 @@ else:
 
 #### Open the dataset ####
 # Original dataset
-production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/production_ts.csv")
+#production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/production_ts.csv")
+production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/production_ts.csv")
 production_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
 # There are some countries with no values for solar generation, so we can drop them out
 no_countries = ['DELU', 'HR', 'HU', 'PL']
@@ -120,7 +121,7 @@ if args.do_reconstruction:
     ### RECONSTRUCTING ###
     # Recover checkpoint
     checkpoint_dir = args.checkpoint_dir
-    checkpoint = torch.load(checkpoint_dir)
+    checkpoint = torch.load(checkpoint_dir, map_location = 'cpu')
     if model_type == "transfomer":
         model.load_state_dict(checkpoint)
     else:
