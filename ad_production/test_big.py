@@ -1,4 +1,4 @@
-from preprocessing import create_transformer_sequences_big, impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies, create_test_sequences_big, create_synthetic_sequences_big, create_synthetic_transformer_sequences_big
+from preprocessing import create_transformer_sequences_big, impute_missing_prod, split, create_sequences, split_big, create_sequences_big, create_test_sequences_big, create_synthetic_sequences_big, create_synthetic_transformer_sequences_big
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -164,29 +164,40 @@ if args.do_reconstruction:
         period = args.period
         anom_amplitude_factor = args.anom_amplitude_factor
         synthetic_df = generate_anomalous_dataset(predicted_df_test, contamination, period, anom_amplitude_factor)
+        synthetic_val = generate_anomalous_dataset(predicted_df_val, contamination, period, anom_amplitude_factor)
         if model_type == "transformer":
             X_s, y_s = create_synthetic_transformer_sequences_big(synthetic_df, train_window)
+            synth_val, synth_y_val = create_synthetic_transformer_sequences_big(synthetic_val, train_window)
         else:
             X_s = create_synthetic_sequences_big(synthetic_df, train_window, train_window)
+            synth_val = create_synthetic_sequences_big(synthetic_val, train_window, train_window)
 
-        synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+        #synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         
         if model_type == "conv_ae" or model_type == "lstm_ae":
             synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+            synth_val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_val).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         elif model_type == "transformer":
             synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float(), torch.from_numpy(y_s).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+            synth_val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_val).float(), torch.from_numpy(synth_y_val).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
         else:
             synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+            synth_val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_val).float().view(([synth_val.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+
         
         res_s, w_s = testing(model, synth_loader, device)
         r_s = np.concatenate([torch.stack(w_s[:-1]).flatten().detach().cpu().numpy(), w_s[-1].flatten().detach().cpu().numpy()])
+        res_val_s, w_val_s = testing(model, synth_val_loader, device)
+        r_val_s = np.concatenate([torch.stack(w_val_s[:-1]).flatten().detach().cpu().numpy(), w_val_s[-1].flatten().detach().cpu().numpy()])
         dim_s = X_s.shape[0] * X_s.shape[1]
         if model_type == "transformer":
             df_s = get_predicted_synthetic_transformer_dataset_big(synthetic_df, r_s, train_window)
+            df_val_s = get_predicted_synthetic_transformer_dataset_big(synthetic_val, r_val_s, train_window)
         else:
             df_s = get_predicted_synthetic_dataset_big(synthetic_df, r_s)
+            df_val_s = get_predicted_synthetic_dataset_big(synthetic_val, r_val_s)
 
-        preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall, k)
+        preds_s = anomaly_detection(df_val_s, df_s, threshold_method, percentile, weight_overall, k)
 
         #tc = synthetic_df[['synthetic_anomaly']]
         #ss = pd.concat([preds_s, tc[:dim_s]], axis = 1)
