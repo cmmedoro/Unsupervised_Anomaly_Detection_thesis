@@ -51,6 +51,19 @@ def get_predicted_dataset_big(test, reconstruction):
     predicted_df_test['rel_loss'] = np.abs((predicted_df_test['reconstruction']-predicted_df_test['solar_generation_actual'])/predicted_df_test['reconstruction'])
     return predicted_df_test
 
+def get_predicted_synthetic_dataset_big(test, reconstruction):
+    scaler = MinMaxScaler(feature_range = (0,1))
+    dict_test = {}
+    for code, gdf in test.groupby('country_code'):
+      gdf[['new_solar_generation_actual']] = scaler.fit_transform(gdf[['new_solar_generation_actual']])
+      dict_test[code] = gdf
+    predicted_df_test = pd.concat(dict_test.values())
+    predicted_df_test['reconstruction'] = reconstruction
+    predicted_df_test['anomaly_score'] = (predicted_df_test.new_solar_generation_actual - predicted_df_test.reconstruction)**2
+    predicted_df_test['abs_loss'] = np.abs(predicted_df_test.new_solar_generation_actual - predicted_df_test.reconstruction)
+    predicted_df_test['rel_loss'] = np.abs((predicted_df_test['reconstruction']-predicted_df_test['new_solar_generation_actual'])/predicted_df_test['reconstruction'])
+    return predicted_df_test
+
 def threshold_abs_loss(val, percentile, predicted_df):
   val_mae_loss = val['abs_loss'].values
   threshold = (np.percentile(val_mae_loss, percentile)) 
