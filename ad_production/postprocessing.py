@@ -38,6 +38,19 @@ def get_transformer_dataset_big(dataset, forecast, train_window):
   predicted_df['rel_loss'] = np.abs((predicted_df['forecast']-predicted_df['solar_generation_actual'])/predicted_df['forecast'])
   return predicted_df
 
+def get_predicted_synthetic_transformer_dataset_big(test, forecast, train_window):
+    scaler = MinMaxScaler(feature_range = (0,1))
+    dict_test = {}
+    for code, gdf in test.groupby('country_code'):
+      gdf[['new_solar_generation_actual']] = scaler.fit_transform(gdf[['new_solar_generation_actual']])
+      dict_test[code] = gdf[train_window:]
+    predicted_df_test = pd.concat(dict_test.values())
+    predicted_df_test['forecast'] = forecast
+    predicted_df_test['anomaly_score'] = (predicted_df_test.new_solar_generation_actual - predicted_df_test.forecast)**2
+    predicted_df_test['abs_loss'] = np.abs(predicted_df_test.new_solar_generation_actual - predicted_df_test.forecast)
+    predicted_df_test['rel_loss'] = np.abs((predicted_df_test['forecast']-predicted_df_test['new_solar_generation_actual'])/predicted_df_test['forecast'])
+    return predicted_df_test
+
 def get_predicted_dataset_big(test, reconstruction):
     scaler = MinMaxScaler(feature_range = (0,1))
     dict_test = {}
@@ -224,11 +237,11 @@ def add_point_outlier(data, label, seed=5, outlierRatio=0.01):
     index = np.random.choice(len(data), n, replace=False)
 
     for i in index:
-      outlier = data[i] + 1.5 * np.std(data)
+      outlier = data.iloc[i] + 1.5 * np.std(data)
       if outlier < 1:
-        data[i] = outlier
+        data.iloc[i] = outlier
       else:
-        data[i] = 1
+        data.iloc[i] = 1
 
     label[index] = 1
 
