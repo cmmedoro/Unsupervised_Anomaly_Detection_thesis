@@ -27,6 +27,8 @@ elif model_type == "lstm_ae":
     from lstm_ae import *
 elif model_type == "transformer":
     from transformer import *
+elif model_type == "lstm":
+    from lstm import *
 from utils_ae import *
 
 
@@ -62,7 +64,7 @@ test = dfs_test.reset_index(drop = True)
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 train_window = args.train_window
-if model_type == "transformer":
+if model_type == "transformer" or model_type == "lstm":
     X_t, y_t = create_transformer_sequences_big(dfs_train, train_window)
     X_v, y_v = create_transformer_sequences_big(dfs_val, train_window)
     X_te, y_te = create_transformer_sequences_big(dfs_test, train_window)
@@ -86,7 +88,7 @@ if model_type == "conv_ae" or model_type == "lstm_ae" :
     #Credo di dover cambiare X_train.shape[0], w_size, X_train.shape[2] con X_train.shape[0], X_train.shape[1], X_train.shape[2]
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-elif model_type == "transformer":
+elif model_type == "transformer" or model_type == "lstm":
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float(), torch.from_numpy(y_v).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float(), torch.from_numpy(y_te).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
  
@@ -97,7 +99,7 @@ else:
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float().reshape(([X_v.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_te).float().reshape(([X_te.shape[0],w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-if model_type == "lstm_ae" or model_type == "conv_ae":
+if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "lstm":
     z_size = 32
 
 d_model = 64
@@ -113,6 +115,8 @@ elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
 elif model_type == "transformer":
     model = Transformer(n_channels, d_model, dim_ff, n_layer, train_window, n_head)
+elif model_type == "lstm":
+    model = LstmModel(n_channels, z_size, 1)
 
 model = model.to(device) #to_device(model, device)
 print(model)
@@ -122,7 +126,7 @@ if args.do_reconstruction:
     # Recover checkpoint
     checkpoint_dir = args.checkpoint_dir
     checkpoint = torch.load(checkpoint_dir, map_location = 'cpu')
-    if model_type == "transformer":
+    if model_type == "transformer" or model_type == "lstm":
         model.load_state_dict(checkpoint)
     else:
         model.encoder.load_state_dict(checkpoint['encoder'])
@@ -143,7 +147,7 @@ if args.do_reconstruction:
     print(len(reconstruction_val))
     dim_val = X_v.shape[0] * X_v.shape[1]
     dim_test = X_te.shape[0] * X_te.shape[1]
-    if model_type == "transformer":
+    if model_type == "transformer" or model_type == "lstm":
         predicted_df_val = get_transformer_dataset_big(val, reconstruction_val, train_window)
         predicted_df_test = get_transformer_dataset_big(test, reconstruction_test, train_window)
     else:
@@ -166,7 +170,7 @@ if args.do_reconstruction:
         anom_amplitude_factor = args.anom_amplitude_factor
         synthetic_df = generate_anomalous_dataset(predicted_df_test, contamination, period, anom_amplitude_factor)
         synthetic_val = generate_anomalous_dataset(predicted_df_val, contamination, period, anom_amplitude_factor)
-        if model_type == "transformer":
+        if model_type == "transformer" or model_type == "lstm":
             X_s, y_s = create_synthetic_transformer_sequences_big(synthetic_df, train_window)
             synth_val, synth_y_val = create_synthetic_transformer_sequences_big(synthetic_val, train_window)
         else:
@@ -178,7 +182,7 @@ if args.do_reconstruction:
         if model_type == "conv_ae" or model_type == "lstm_ae":
             synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
             synth_val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_val).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-        elif model_type == "transformer":
+        elif model_type == "transformer" or model_type == "lstm":
             synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float(), torch.from_numpy(y_s).float()) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
             synth_val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(synth_val).float(), torch.from_numpy(synth_y_val).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
         else:
@@ -191,7 +195,7 @@ if args.do_reconstruction:
         res_val_s, w_val_s = testing(model, synth_val_loader, device)
         r_val_s = np.concatenate([torch.stack(w_val_s[:-1]).flatten().detach().cpu().numpy(), w_val_s[-1].flatten().detach().cpu().numpy()])
         dim_s = X_s.shape[0] * X_s.shape[1]
-        if model_type == "transformer":
+        if model_type == "transformer" or model_type == "lstm":
             df_s = get_predicted_synthetic_transformer_dataset_big(synthetic_df, r_s, train_window)
             df_val_s = get_predicted_synthetic_transformer_dataset_big(synthetic_val, r_val_s, train_window)
         else:

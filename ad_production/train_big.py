@@ -25,6 +25,8 @@ elif model_type == "lstm_ae":
     from lstm_ae import *
 elif model_type == "transformer":
     from transformer import *
+elif model_type == "lstm":
+    from lstm import *
 from utils_ae import *
 
 if torch.cuda.is_available():
@@ -34,8 +36,8 @@ else:
 
 #### Open the dataset ####
 # Original dataset
-production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/production_ts.csv")
-#production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/production_ts.csv")
+#production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/production_ts.csv")
+production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/production_ts.csv")
 #production_df = pd.read_csv("/kaggle/input/production-time-series/production_ts.csv")
 production_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
 # There are some countries with no values for solar generation, so we can drop them out
@@ -61,7 +63,7 @@ test = dfs_test.reset_index(drop = True)
 ### TRAINING THE MODEL ###
 # For training we are going to create an input dataset consisting of overlapping windows of 72 measurements (3 days)
 train_window = args.train_window
-if model_type == "transformer":
+if model_type == "transformer" or model_type == "lstm":
     X_t, y_t = create_transformer_sequences_big(dfs_train, train_window)
     X_v, y_v = create_transformer_sequences_big(dfs_val, train_window)
     X_te, y_te = create_transformer_sequences_big(dfs_test, train_window)
@@ -85,7 +87,7 @@ if model_type == "conv_ae" or model_type == "lstm_ae" :
     #Credo di dover cambiare X_train.shape[0], w_size, X_train.shape[2] con X_train.shape[0], X_train.shape[1], X_train.shape[2]
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
-elif model_type == "transformer":
+elif model_type == "transformer" or model_type == "lstm":
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float(), torch.from_numpy(y_t).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float(), torch.from_numpy(y_v).float()), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 elif model_type == "linear_ae" and args.do_multivariate:
@@ -95,7 +97,7 @@ else:
     train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size])), torch.from_numpy(X_t).float().reshape(([X_t.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     val_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_v).float().view(([X_v.shape[0], w_size])), torch.from_numpy(X_v).float().view(([X_v.shape[0], w_size]))), batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
     
-if model_type == "lstm_ae" or model_type == "conv_ae":
+if model_type == "lstm_ae" or model_type == "conv_ae" or model_type == "lstm":
     z_size = 32
 d_model = 64
 dim_ff = 256
@@ -110,6 +112,8 @@ elif model_type == "linear_ae":
     model = LinearAE(w_size, z_size)
 elif model_type == "transformer":
     model = Transformer(n_channels, d_model, dim_ff, n_layer, train_window, n_head)
+elif model_type == "lstm":
+    model = LstmModel(n_channels, z_size, 1)
 
 print(device)
 model = model.to(device) 
@@ -121,7 +125,7 @@ print(history)
   
 #plot_history(history)
 checkpoint_path = args.save_checkpoint_dir
-if model_type != "transformer":
+if model_type == "lstm_ae" or model_type == "linear_ae" or model_type == "conv_ae":
     torch.save({
             'encoder': model.encoder.state_dict(),
             'decoder': model.decoder.state_dict()
@@ -137,4 +141,4 @@ else:
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 #else:
  #   np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_outputMultiFeat_15_06.npy', history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/transformer_prod_200_03_01.npy', history)
+np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/production_big_lstm_200_17_01.npy', history)
