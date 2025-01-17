@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from preprocessing import create_transformer_sequences_big, impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies, create_test_sequences_big
-=======
 from preprocessing import create_transformer_sequences_big, impute_missing_prod, split, create_sequences, split_big, create_sequences_big, synthetize_anomalies, create_test_sequences_big, create_synthetic_sequences_big, create_synthetic_transformer_sequences_big
->>>>>>> 74cf040 (Adjustments v2)
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -11,11 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import MinMaxScaler
-<<<<<<< HEAD
-from postprocessing import get_predicted_dataset_big, anomaly_detection, get_transformer_dataset_big, generate_anomalous_dataset , get_predicted_synthetic_dataset_big
-=======
 from postprocessing import get_predicted_synthetic_transformer_dataset_big, get_predicted_dataset_big, anomaly_detection, get_transformer_dataset_big, generate_anomalous_dataset , get_predicted_synthetic_dataset_big
->>>>>>> 74cf040 (Adjustments v2)
 import plotly.graph_objects as go
 import torch.utils.data as data_utils
 import parser_file as pars
@@ -175,11 +167,7 @@ if args.do_reconstruction:
         if model_type == "transformer":
             X_s, y_s = create_synthetic_transformer_sequences_big(synthetic_df, train_window)
         else:
-<<<<<<< HEAD
-            X_s = create_test_sequences_big(synthetic_df, train_window, train_window)
-=======
             X_s = create_synthetic_sequences_big(synthetic_df, train_window, train_window)
->>>>>>> 74cf040 (Adjustments v2)
 
         synth_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(torch.from_numpy(X_s).float().view(([X_s.shape[0], w_size]))) , batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
         
@@ -193,14 +181,10 @@ if args.do_reconstruction:
         res_s, w_s = testing(model, synth_loader, device)
         r_s = np.concatenate([torch.stack(w_s[:-1]).flatten().detach().cpu().numpy(), w_s[-1].flatten().detach().cpu().numpy()])
         dim_s = X_s.shape[0] * X_s.shape[1]
-<<<<<<< HEAD
-        df_s = get_predicted_synthetic_dataset_big(synthetic_df, r_s)
-=======
         if model_type == "transformer":
             df_s = get_predicted_synthetic_transformer_dataset_big(synthetic_df, r_s, train_window)
         else:
             df_s = get_predicted_synthetic_dataset_big(synthetic_df, r_s)
->>>>>>> 74cf040 (Adjustments v2)
 
         preds_s = anomaly_detection(predicted_df_val, df_s, threshold_method, percentile, weight_overall, k)
 
