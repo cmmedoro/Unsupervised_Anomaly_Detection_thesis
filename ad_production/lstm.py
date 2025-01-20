@@ -60,7 +60,7 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
           z = model(X_batch)
           #print("Z: ", z.size())
           #print("Y: ", y_batch.size())
-          loss = criterion(z, y_batch) #z.squeeze() for lead --> out_size == 1
+          loss = criterion(z.squeeze(), y_batch) #z.squeeze() for lead --> out_size == 1
           train_loss.append(loss)
 
           optimizer.zero_grad()
@@ -75,7 +75,7 @@ def training(epochs, model, train_loader, val_loader, device, opt_func=torch.opt
           y_batch = y_batch.to(device) #to_device(y_batch, device)
           with torch.no_grad():
             z = model(X_batch)
-            loss = criterion(z, y_batch)
+            loss = criterion(z.squeeze(), y_batch)
           #loss = model.validation_step(X_batch, y_batch, criterion, n)
           batch_loss.append(loss)
 
@@ -101,7 +101,7 @@ def testing(model, test_loader, device):
             #batch_s = y_batch.reshape(-1, y_batch.size()[1] * y_batch.size()[2])
             #w_s = w.reshape(-1, w.size()[1] * w.size()[2])
             #results.append(criterion(w.squeeze(), y_batch))
-            results.append(torch.mean((y_batch-w)**2,axis=1)) #(y_batch.unsqueeze(1) for lead
+            results.append(torch.mean((y_batch.unsqueeze(1)-w)**2,axis=1)) #(y_batch.unsqueeze(1) for lead
             #results.append(torch.mean((batch_s-w_s)**2, axis = 1))
             forecast.append(w)
     return results, forecast

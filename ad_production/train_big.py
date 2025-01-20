@@ -36,8 +36,8 @@ else:
 
 #### Open the dataset ####
 # Original dataset
-#production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/production_ts.csv")
-production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/production_ts.csv")
+production_df = pd.read_csv("/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/data/production_ts.csv")
+#production_df = pd.read_csv("/content/drive/MyDrive/Prova_Transformers_production_ad/production_ts.csv")
 #production_df = pd.read_csv("/kaggle/input/production-time-series/production_ts.csv")
 production_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
 # There are some countries with no values for solar generation, so we can drop them out
@@ -141,4 +141,4 @@ else:
     #np.save('/content/checkpoints/train_recos.npy', train_recos_to_save)
 #else:
  #   np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/history_conv_ae_multi_outputMultiFeat_15_06.npy', history)
-np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/production_big_lstm_200_17_01.npy', history)
+#np.save('/nfs/home/medoro/Unsupervised_Anomaly_Detection_thesis/checkpoints/production_big_lstm_200_17_01.npy', history)
